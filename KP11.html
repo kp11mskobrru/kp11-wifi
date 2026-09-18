@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+  <meta name="description" content="КП-11 — Бесплатный Wi-Fi. Подключение к беспроводной сети Колледжа предпринимательства № 11"/>
+  <meta property="og:image" content="college-predprinimatelstva-11.png"/>
+  <title>КП-11 — Бесплатный Wi-Fi</title>
+
+  <link rel="icon" href="college-predprinimatelstva-11.png" type="image/png"/>
+  <link rel="shortcut icon" href="college-predprinimatelstva-11.png" type="image/png"/>
+  <meta name="theme-color" content="#ffffff">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .app-header { background: #fff; }
+
+    .app-header-box {
+      display: flex;
+      align-items: center;
+      padding: 25px 30px;
+      gap: 30px;
+      flex-wrap: nowrap;
+      overflow: hidden;
+    }
+
+    .app-header-box-logo-info-container {
+      display: flex;
+      align-items: center;
+      gap: 35px;
+      flex-wrap: nowrap;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .app-header-box-logo-dep,
+    .app-header-box-logo-container {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+      flex-shrink: 1;
+    }
+
+    .app-header-box-logo img {
+      height: 70px;
+      max-width: 100%;
+      object-fit: contain;
+    }
+
+    .logo-text {
+      font-size: 16px;
+      color: #2b5797;
+      line-height: 1.4;
+      max-width: 260px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    .logo-text .logo-text-sub {
+      display: block;
+      font-size: 13px;
+      color: #888;
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .divider {
+      width: 1px;
+      height: 70px;
+      background: linear-gradient(to bottom, transparent, #ccc, transparent);
+      flex-shrink: 0;
+    }
+
+    .app-nav {
+      background: #1893d2;
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .app-nav::-webkit-scrollbar { display: none; }
+
+    .app-nav ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: nowrap;
+      width: max-content;
+      min-width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    .app-nav li {
+      flex: 1 1 0;
+      min-width: 130px;
+      position: relative;
+    }
+    .app-nav a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 10px;
+      font-size: 15px;
+      font-weight: 500;
+      transition: background 0.2s;
+      text-align: center;
+      width: 100%;
+      height: 100%;
+      white-space: nowrap;
+    }
+    .app-nav a:hover { background: #2b5797; }
+
+    .app-nav a.active {
+      background: #2b5797;
+      box-shadow: inset 0 -3px 0 #fff;
+    }
+
+    .app-nav a .nav-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .welcome {
+      text-align: center;
+      padding: 60px 20px 20px;
+    }
+    .welcome h2 {
+      font-size: 32px;
+      color: #1893d2;
+      font-weight: 600;
+    }
+
+    main {
+      flex: 1;
+      padding: 20px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .wifi-card {
+      max-width: 460px;
+      margin: 0 auto 40px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 26px 26px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      border: 1px solid #eaeaea;
+    }
+    .wifi-card h3 {
+      font-size: 20px;
+      color: #2b5797;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .wifi-card .wifi-sub {
+      font-size: 13px;
+      color: #888;
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .wifi-card label {
+      display: block;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .wifi-card input,
+    .wifi-card select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #d6d6d6;
+      background: #fafafa;
+      color: #333;
+      font-size: 15px;
+      margin-bottom: 16px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .wifi-card input:focus,
+    .wifi-card select:focus {
+      border-color: #1893d2;
+      background: #fff;
+    }
+    .wifi-card input::placeholder { color: #aaa; }
+
+    .wifi-card select.staff-option {
+      color: #1893d2;
+      font-weight: 700;
+    }
+
+    .wifi-card input.input-invalid {
+      border-color: #e53935;
+      background: #fff5f5;
+    }
+    .field-error {
+      display: none;
+      color: #e53935;
+      font-size: 12.5px;
+      margin: -10px 0 14px;
+      line-height: 1.4;
+    }
+    .field-error.show { display: block; }
+
+    .wifi-card button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: #1893d2;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-family: inherit;
+    }
+    .wifi-card button:hover { background: #1479ae; }
+    .wifi-card button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .field-hidden { display: none !important; }
+
+    .notice {
+      display: none;
+      margin: 0 auto 20px;
+      max-width: 460px;
+      background: #fff3cd;
+      border: 1px solid #ffe69c;
+      color: #7a5b00;
+      padding: 16px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      text-align: center;
+      animation: fadeIn 0.25s ease;
+    }
+    .notice.show { display: block; }
+    .notice b { display: block; margin-bottom: 4px; font-size: 15px; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .app-footer {
+      background: #2b5797;
+      color: #fff;
+      padding: 25px 30px;
+      font-size: 14px;
+      text-align: center;
+      margin-top: auto;
+    }
+    .app-footer a { color: #fff; text-decoration: underline; opacity: 0.9; }
+    .app-footer a:hover { opacity: 1; }
+    .app-footer p { margin: 6px 0; }
+
+    @media (max-width: 992px) {
+      .app-header-box { padding: 20px; gap: 20px; }
+      .app-header-box-logo-info-container { gap: 22px; }
+      .app-header-box-logo img { height: 58px; }
+      .logo-text { font-size: 14px; max-width: 200px; }
+      .logo-text .logo-text-sub { font-size: 12px; }
+      .divider { height: 58px; }
+      .welcome h2 { font-size: 28px; }
+    }
+
+    @media (max-width: 768px) {
+      .app-header-box { padding: 14px; gap: 14px; }
+      .app-header-box-logo-info-container { gap: 14px; }
+      .app-header-box-logo-dep,
+      .app-header-box-logo-container { gap: 10px; }
+      .app-header-box-logo img { height: 44px; }
+      .logo-text { font-size: 12px; max-width: 140px; line-height: 1.25; }
+      .logo-text .logo-text-sub { font-size: 10px; }
+      .divider { height: 44px; }
+
+      .app-nav li { min-width: 110px; }
+      .app-nav a { font-size: 12px; padding: 9px 8px; }
+      .app-nav a .nav-icon { font-size: 20px; }
+
+      .welcome { padding: 40px 15px 15px; }
+      .welcome h2 { font-size: 24px; }
+
+      main { padding: 15px; }
+      .wifi-card { padding: 22px 18px 20px; }
+      .app-footer { padding: 20px 15px; font-size: 12px; }
+    }
+
+    @media (max-width: 480px) {
+      .app-header-box { padding: 10px; gap: 10px; }
+      .app-header-box-logo-info-container { gap: 10px; }
+      .app-header-box-logo-dep,
+      .app-header-box-logo-container { gap: 7px; }
+      .app-header-box-logo img { height: 34px; }
+      .logo-text { font-size: 10px; max-width: 110px; line-height: 1.2; }
+      .logo-text .logo-text-sub { font-size: 8px; }
+      .divider { height: 34px; }
+
+      .app-nav li { min-width: 92px; }
+      .app-nav a { font-size: 11px; padding: 8px 6px; }
+      .app-nav a .nav-icon { font-size: 18px; }
+
+      .welcome h2 { font-size: 20px; }
+      .app-footer { font-size: 10px; }
+    }
+
+    @media (max-width: 360px) {
+      .app-header-box-logo img { height: 28px; }
+      .logo-text { font-size: 9px; max-width: 90px; }
+      .logo-text .logo-text-sub { display: none; }
+      .divider { height: 28px; }
+    }
+  </style>
+</head>
+<body class="app" data-level="all" data-eo-id="12887">
+
+  <div class="app-container" style="display:flex; flex-direction:column; flex:1;">
+
+    <div id="app-root-0" class="app-header">
+
+      <div class="app-header-box">
+        <div class="app-header-box-logo-info-container">
+
+          <div class="app-header-box-logo-dep">
+            <div class="app-header-box-logo">
+              <img src="https://static.mskobr.ru/js/templates/office/tmp/dep_logo.svg" alt="Департамент образования и науки города Москвы">
+            </div>
+            <div class="logo-text">
+              Департамент образования<br>и науки города Москвы
+              <span class="logo-text-sub">Правительство Москвы</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="app-header-box-logo-container">
+            <div class="app-header-box-logo">
+              <img src="college-predprinimatelstva-11.png" alt="Логотип организации">
+            </div>
+            <div class="logo-text">
+              КП-11 — Бесплатный Wi-Fi
+              <span class="logo-text-sub">Колледж предпринимательства № 11</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <nav class="app-nav">
+        <ul>
+          <li><a href="#"><span class="nav-icon">🏠</span> Главная</a></li>
+          <li><a href="#" class="active"><span class="nav-icon">📶</span> Подключение к Wi-Fi</a></li>
+          <li><a href="#"><span class="nav-icon">ℹ️</span> О колледже</a></li>
+          <li><a href="#"><span class="nav-icon">🎓</span> Поступающим</a></li>
+          <li><a href="#"><span class="nav-icon">📚</span> Студентам</a></li>
+          <li><a href="#"><span class="nav-icon">📰</span> Новости</a></li>
+          <li><a href="#"><span class="nav-icon">📞</span> Контакты</a></li>
+        </ul>
+      </nav>
+
+    </div>
+
+    <div class="welcome">
+      <h2>Добро пожаловать!</h2>
+    </div>
+
+    <main>
+
+      <div class="notice" id="notice">
+        <b>Wi-Fi недоступен</b>
+        Беспроводная сеть КП-11 предоставляется только студентам колледжа.<br>
+        Сотрудникам и преподавателям — обратитесь в IT-отдел.
+      </div>
+
+      <div class="wifi-card">
+        <h3>Подключение к Wi-Fi</h3>
+        <div class="wifi-sub">Введите данные для доступа к сети</div>
+
+        <form id="wifiForm" novalidate>
+          <label for="fio">ФИО</label>
+          <input type="text" id="fio" placeholder="Иванов Иван Иванович" autocomplete="name">
+          <div class="field-error" id="fioError"></div>
+
+          <label for="course">Курс</label>
+          <select id="course" required>
+            <option value="" disabled selected>— Выберите курс —</option>
+            <option value="staff" class="staff-option">★ Я работник (педагог и т.д.)</option>
+            <option value="1">1 курс</option>
+            <option value="2">2 курс</option>
+            <option value="3">3 курс</option>
+            <option value="4">4 курс</option>
+          </select>
+
+          <div id="directionWrap" class="field-hidden">
+            <label for="direction">Направление</label>
+            <select id="direction">
+              <option value="" disabled selected>— Выберите направление —</option>
+            </select>
+          </div>
+
+          <div id="groupWrap" class="field-hidden">
+            <label for="group">Группа</label>
+            <select id="group">
+              <option value="" disabled selected>— Выберите группу —</option>
+            </select>
+          </div>
+
+          <button type="submit" id="btn">Подключиться</button>
+        </form>
+      </div>
+
+    </main>
+
+  </div>
+
+  <div class="app-footer">
+    <p>2026 © <a href="https://center.educom.ru/oauth/store/user_agreement.pdf" target="_blank" rel="noopener noreferrer">Соглашение о пользовании ЕКИС ДОНМ</a></p>
+    <p>2026 © <a href="https://www.mos.ru/donm/" target="_blank" rel="noopener noreferrer">Департамент образования и науки города Москвы</a></p>
+    <p>2026 © <a href="https://digitalcenter.moscow/" target="_blank" rel="noopener noreferrer">Разработка и поддержка ГАУ «Центр цифровизации образования»</a></p>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ====== ВСТАВЬ СВОЙ КОНФИГ FIREBASE ======
+  const firebaseConfig = {
+    apiKey: "ТВОЙ_API_KEY",
+    authDomain: "ТВОЙ_PROJECT.firebaseapp.com",
+    projectId: "ТВОЙ_PROJECT_ID",
+    storageBucket: "ТВОЙ_PROJECT.appspot.com",
+    messagingSenderId: "ТВОЙ_SENDER_ID",
+    appId: "ТВОЙ_APP_ID"
+  };
+  // =========================================
+
+  const SHREK_URL = "shrek.html";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const GROUPS = {
+    "1": {
+      "А":   ["А11-26","А12-26","А13-26","А14-26","А15-26"],
+      "ФТ":  ["ФТ11-26","ФТ12-26"],
+      "МЗМ": ["МЗМ11-26","МЗМ12-26","МЗМ13-26","МЗМ14-26"],
+      "СКД": ["СКД11-26"],
+      "ТОА": ["ТОА11-26"],
+      "КТ":  ["КТ11-26","КТ12-26","КТ13-26","КТ14-26","КТ15-26","КТ16-26"],
+      "Ю":   ["Ю11-26","Ю12-26","Ю13-26"]
+    },
+    "2": {
+      "А":   ["А21-25","А22-25","А23-25","А24-25","А25-25"],
+      "ФТ":  ["ФТ21-25","ФТ22-25"],
+      "МЗМ": ["МЗМ21-25","МЗМ22-25","МЗМ23-25","МЗМ24-25","МЗМ25-25","МЗМ26-25"],
+      "ТОА": ["ТОА21-25"],
+      "КТ":  ["КТ21-25","КТ22-25","КТ23-25","КТ24-25","КТ25-25","КТ26-25","КТ27-25","КТ28оз-25"],
+      "Ю":   ["Ю21-25","Ю22-25"]
+    },
+    "3": {
+      "А":   ["А31-24","А33-24","А35оз-24","А36оз-24"],
+      "ФТ":  ["ФТ31-24","ФТ32-24","ФТ33оз-24"],
+      "МЗМ": ["МЗМ31-24","МЗМ32-24","МЗМ33-24"],
+      "ТОА": ["ТОА31-24"],
+      "КТ":  ["КТ31-24","КТ32-24"],
+      "Ю":   ["Ю31-24"]
+    },
+    "4": {
+      "ФТ":  ["ФТ43оз-23","ФТ44-23"],
+      "МЗМ": ["МЗМ44-23","МЗМ45-23"],
+      "ТОА": ["ТОА41-23"],
+      "Ю":   ["Ю42-23"]
+    }
+  };
+
+  // ====== Валидация ФИО ======
+  const BAD_WORDS = [
+    "хуй","хуя","хую","хуе","хер","пизд","бляд","блят","ебал","ебан","ебуч","ебат",
+    "ебет","ебут","еби","ёб","fuck","shit","bitch","asshole","сука","сукa",
+    "гандон","гондон","мраз","муд","дроч","педик","пидор","пидар","гей",
+    "уеб","уёб","залуп","манда","вагин","секс","порн","шлюх","шлюш"
+  ];
+
+  const FAKE_WORDS = [
+    "тест","test","админ","admin","юзер","user","гость","guest",
+    "ааа","ббб","ввв","ггг","ддд","еее","жжж","ззз","иии","ййй",
+    "ккк","ллл","ммм","ннн","ооо","ппп","ррр","ссс","ттт","ууу",
+    "ффф","ххх","ццц","ччч","шшш","щщщ","ъъъ","ыыы","ььь","эээ",
+    "ююю","яяя","фцу","фцуу","фц","цф","фф","цц"
+  ];
+
+  const VOWELS_RU = "аеёиоуыэюя";
+  const VOWELS_EN = "aeiouy";
+
+  function hasVowel(word) {
+    const w = word.toLowerCase();
+    for (const ch of w) {
+      if (VOWELS_RU.includes(ch) || VOWELS_EN.includes(ch)) return true;
+    }
+    return false;
+  }
+
+  function hasTooManySameLetters(word) {
+    const w = word.toLowerCase();
+    let max = 1, cur = 1;
+    for (let i = 1; i < w.length; i++) {
+      if (w[i] === w[i - 1]) { cur++; max = Math.max(max, cur); }
+      else cur = 1;
+    }
+    return max >= 4;
+  }
+
+  function hasTooManyConsonants(word) {
+    const w = word.toLowerCase();
+    const vowels = VOWELS_RU + VOWELS_EN;
+    let max = 0, cur = 0;
+    for (const ch of w) {
+      if (!/[а-яёa-z]/.test(ch)) { cur = 0; continue; }
+      if (vowels.includes(ch)) cur = 0;
+      else { cur++; max = Math.max(max, cur); }
+    }
+    return max >= 5;
+  }
+
+  function containsBadWord(word) {
+    const w = word.toLowerCase();
+    return BAD_WORDS.some(bad => w.includes(bad)) ||
+           FAKE_WORDS.includes(w);
+  }
+
+  function validateFIO(raw) {
+    const value = String(raw || "").trim();
+
+    if (!value) return { ok: false, message: "Введите ФИО." };
+
+    if (!/^[А-Яа-яЁёA-Za-z\s\-]+$/.test(value)) {
+      return { ok: false, message: "ФИО может содержать только буквы, пробелы и дефис." };
+    }
+
+    const parts = value.split(/[\s\-]+/).filter(Boolean);
+
+    if (parts.length < 2) {
+      return { ok: false, message: "Введите минимум фамилию и имя (2 слова)." };
+    }
+    if (parts.length > 4) {
+      return { ok: false, message: "Слишком много слов. Формат: Фамилия Имя Отчество." };
+    }
+
+    for (const part of parts) {
+      if (part.length < 2) {
+        return { ok: false, message: `Слово «${part}» слишком короткое.` };
+      }
+      if (part.length > 30) {
+        return { ok: false, message: `Слово «${part}» слишком длинное.` };
+      }
+
+      const first = part[0];
+      if (first !== first.toUpperCase() || !/[А-ЯЁA-Z]/.test(first)) {
+        return { ok: false, message: "Каждое слово должно начинаться с заглавной буквы." };
+      }
+
+      const rest = part.slice(1);
+      if (rest !== rest.toLowerCase()) {
+        return { ok: false, message: "После первой буквы должны идти строчные." };
+      }
+
+      if (!hasVowel(part)) {
+        return { ok: false, message: `В слове «${part}» нет гласных.` };
+      }
+      if (hasTooManySameLetters(part)) {
+        return { ok: false, message: `Слово «${part}» похоже на набор одинаковых букв.` };
+      }
+      if (hasTooManyConsonants(part)) {
+        return { ok: false, message: `Слово «${part}» содержит слишком много согласных подряд.` };
+      }
+      if (containsBadWord(part)) {
+        return { ok: false, message: "Пожалуйста, введите настоящие ФИО." };
+      }
+    }
+
+    return { ok: true };
+  }
+
+  // ====== UI ======
+  const form     = document.getElementById('wifiForm');
+  const fioEl    = document.getElementById('fio');
+  const fioError = document.getElementById('fioError');
+  const courseEl = document.getElementById('course');
+  const dirWrap  = document.getElementById('directionWrap');
+  const dirEl    = document.getElementById('direction');
+  const grpWrap  = document.getElementById('groupWrap');
+  const grpEl    = document.getElementById('group');
+  const btn      = document.getElementById('btn');
+  const notice   = document.getElementById('notice');
+
+  function showFioError(msg) {
+    fioError.textContent = msg;
+    fioError.classList.add('show');
+    fioEl.classList.add('input-invalid');
+  }
+  function clearFioError() {
+    fioError.textContent = '';
+    fioError.classList.remove('show');
+    fioEl.classList.remove('input-invalid');
+  }
+
+  fioEl.addEventListener('input', () => {
+    if (fioError.classList.contains('show')) clearFioError();
+  });
+
+  courseEl.addEventListener('change', () => {
+    notice.classList.remove('show');
+
+    if (courseEl.value === 'staff') {
+      dirWrap.classList.add('field-hidden');
+      grpWrap.classList.add('field-hidden');
+      dirEl.innerHTML = '<option value="" disabled selected>— Выберите направление —</option>';
+      grpEl.innerHTML = '<option value="" disabled selected>— Выберите группу —</option>';
+      return;
+    }
+
+    const course = courseEl.value;
+    const directions = GROUPS[course] || {};
+
+    dirEl.innerHTML = '<option value="" disabled selected>— Выберите направление —</option>';
+    Object.keys(directions).forEach(dir => {
+      const opt = document.createElement('option');
+      opt.value = dir;
+      opt.textContent = dir;
+      dirEl.appendChild(opt);
+    });
+    dirWrap.classList.remove('field-hidden');
+
+    grpEl.innerHTML = '<option value="" disabled selected>— Выберите группу —</option>';
+    grpWrap.classList.add('field-hidden');
+  });
+
+  dirEl.addEventListener('change', () => {
+    const course = courseEl.value;
+    const dir = dirEl.value;
+    const list = (GROUPS[course] && GROUPS[course][dir]) || [];
+
+    grpEl.innerHTML = '<option value="" disabled selected>— Выберите группу —</option>';
+    list.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g;
+      opt.textContent = g;
+      grpEl.appendChild(opt);
+    });
+
+    grpWrap.classList.remove('field-hidden');
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    notice.classList.remove('show');
+
+    if (courseEl.value === 'staff') {
+      if (fioEl.value.trim()) {
+        const res = validateFIO(fioEl.value);
+        if (!res.ok) {
+          showFioError(res.message);
+          fioEl.focus();
+          fioEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
+      clearFioError();
+      notice.classList.add('show');
+      notice.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    if (!courseEl.value) {
+      courseEl.focus();
+      courseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (!dirEl.value) {
+      dirEl.focus();
+      dirEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (!grpEl.value) {
+      grpEl.focus();
+      grpEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const res = validateFIO(fioEl.value);
+    if (!res.ok) {
+      showFioError(res.message);
+      fioEl.focus();
+      fioEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    clearFioError();
+
+    btn.disabled = true;
+    btn.textContent = 'Подключение...';
+
+    try {
+      await addDoc(collection(db, "students"), {
+        fio: fioEl.value.trim().replace(/\s+/g, ' '),
+        group: grpEl.value,
+        time: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Ошибка сохранения:", err);
+    }
+
+    window.location.href = SHREK_URL;
+  });
+</script>
+
+</body>
+</html>
