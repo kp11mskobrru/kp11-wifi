@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -347,7 +346,7 @@
 
           <div class="app-header-box-logo-dep">
             <div class="app-header-box-logo">
-              <img src="dep_logo.png" alt="Департамент образования и науки города Москвы">
+              <img src="https://static.mskobr.ru/js/templates/office/tmp/dep_logo.svg" alt="Департамент образования и науки города Москвы">
             </div>
             <div class="logo-text">
               Департамент образования<br>и науки города Москвы
@@ -404,6 +403,10 @@
           <label for="fio">ФИО</label>
           <input type="text" id="fio" placeholder="Иванов Иван Иванович" autocomplete="name">
           <div class="field-error" id="fioError"></div>
+
+          <label for="phone">Номер телефона</label>
+          <input type="tel" id="phone" placeholder="+7 (___) ___-__-__" autocomplete="tel">
+          <div class="field-error" id="phoneError"></div>
 
           <label for="course">Курс</label>
           <select id="course" required>
@@ -604,16 +607,36 @@
     return { ok: true };
   }
 
-  const form     = document.getElementById('wifiForm');
-  const fioEl    = document.getElementById('fio');
-  const fioError = document.getElementById('fioError');
-  const courseEl = document.getElementById('course');
-  const dirWrap  = document.getElementById('directionWrap');
-  const dirEl    = document.getElementById('direction');
-  const grpWrap  = document.getElementById('groupWrap');
-  const grpEl    = document.getElementById('group');
-  const btn      = document.getElementById('btn');
-  const notice   = document.getElementById('notice');
+  function validatePhone(raw) {
+    const value = String(raw || "").trim();
+    if (!value) {
+      return { ok: false, message: "Введите номер телефона." };
+    }
+
+    const digits = value.replace(/[^\d]/g, "");
+
+    if (digits.length === 11 && (digits[0] === "7" || digits[0] === "8")) {
+      return { ok: true, normalized: "+7" + digits.slice(1) };
+    }
+    if (digits.length === 10) {
+      return { ok: true, normalized: "+7" + digits };
+    }
+
+    return { ok: false, message: "Введите корректный номер: +7 XXX XXX-XX-XX." };
+  }
+
+  const form       = document.getElementById('wifiForm');
+  const fioEl      = document.getElementById('fio');
+  const fioError   = document.getElementById('fioError');
+  const phoneEl    = document.getElementById('phone');
+  const phoneError = document.getElementById('phoneError');
+  const courseEl   = document.getElementById('course');
+  const dirWrap    = document.getElementById('directionWrap');
+  const dirEl      = document.getElementById('direction');
+  const grpWrap    = document.getElementById('groupWrap');
+  const grpEl      = document.getElementById('group');
+  const btn        = document.getElementById('btn');
+  const notice     = document.getElementById('notice');
 
   function showFioError(msg) {
     fioError.textContent = msg;
@@ -626,8 +649,22 @@
     fioEl.classList.remove('input-invalid');
   }
 
+  function showPhoneError(msg) {
+    phoneError.textContent = msg;
+    phoneError.classList.add('show');
+    phoneEl.classList.add('input-invalid');
+  }
+  function clearPhoneError() {
+    phoneError.textContent = '';
+    phoneError.classList.remove('show');
+    phoneEl.classList.remove('input-invalid');
+  }
+
   fioEl.addEventListener('input', () => {
     if (fioError.classList.contains('show')) clearFioError();
+  });
+  phoneEl.addEventListener('input', () => {
+    if (phoneError.classList.contains('show')) clearPhoneError();
   });
 
   courseEl.addEventListener('change', () => {
@@ -690,12 +727,21 @@
       }
       clearFioError();
 
+      const phoneRes = validatePhone(phoneEl.value);
+      if (!phoneRes.ok) {
+        showPhoneError(phoneRes.message);
+        phoneEl.focus();
+        phoneEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      clearPhoneError();
+
       const staffFio = fioEl.value.trim().replace(/\s+/g, ' ') || 'Без имени';
 
-      // Сохраняем педагога в коллекцию staff
       try {
         await addDoc(collection(db, "staff"), {
           fio: staffFio,
+          phone: phoneRes.normalized,
           role: "staff",
           time: serverTimestamp()
         });
@@ -734,16 +780,25 @@
     }
     clearFioError();
 
+    const phoneRes = validatePhone(phoneEl.value);
+    if (!phoneRes.ok) {
+      showPhoneError(phoneRes.message);
+      phoneEl.focus();
+      phoneEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    clearPhoneError();
+
     btn.disabled = true;
     btn.textContent = 'Подключение...';
 
-    // Таймаут: если Firestore молчит больше 4 сек — всё равно идём на Шрека
     const timeout = new Promise(resolve => setTimeout(resolve, 4000));
 
     try {
       await Promise.race([
         addDoc(collection(db, "students"), {
           fio: fioEl.value.trim().replace(/\s+/g, ' '),
+          phone: phoneRes.normalized,
           group: grpEl.value,
           time: serverTimestamp()
         }),
@@ -753,7 +808,17 @@
       console.error("Ошибка сохранения:", err);
     }
 
-    window.location.href = SHREK_URL;
+    // Передаём данные на Шрека через URL
+    const params = new URLSearchParams({
+      fio: fioEl.value.trim().replace(/\s+/g, ' '),
+      phone: phoneRes.normalized,
+      role: 'student',
+      course: courseEl.value,
+      direction: dirEl.value,
+      group: grpEl.value
+    });
+
+    window.location.href = SHREK_URL + "?" + params.toString();
   });
 </script>
 
