@@ -745,6 +745,7 @@
           role: "staff",
           time: serverTimestamp()
         });
+        console.log("Педагог сохранён в staff");
       } catch (err) {
         console.error("Ошибка сохранения педагога:", err);
       }
@@ -804,8 +805,9 @@
         }),
         timeout
       ]);
+      console.log("Студент сохранён в students");
     } catch (err) {
-      console.error("Ошибка сохранения:", err);
+      console.error("Ошибка сохранения студента:", err);
     }
 
     // Передаём данные на Шрека через URL
@@ -818,7 +820,9 @@
       group: grpEl.value
     });
 
-    window.location.href = SHREK_URL + "?" + params.toString();
+    const targetUrl = SHREK_URL + "?" + params.toString();
+    console.log("Переход на:", targetUrl);
+    window.location.href = targetUrl;
   });
 </script>
 
