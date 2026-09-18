@@ -146,7 +146,6 @@
       margin: 0 auto;
     }
 
-    /* ====== Экран с Шреком ====== */
     .shrek-screen {
       text-align: center;
       padding: 20px 10px 40px;
@@ -319,7 +318,7 @@
     <p>2026 © <a href="https://digitalcenter.moscow/" target="_blank" rel="noopener noreferrer">Разработка и поддержка ГАУ «Центр цифровизации образования»</a></p>
   </div>
 
-<!-- ====== Звук (обычный скрипт) ====== -->
+<!-- ====== Звук ====== -->
 <script>
   const audio = document.getElementById('shrekAudio');
   audio.volume = 1.0;
@@ -340,7 +339,7 @@
   }
 </script>
 
-<!-- ====== Сбор данных + сохранение в Firestore ====== -->
+<!-- ====== Сбор данных + сохранение ====== -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
@@ -368,13 +367,18 @@
   const direction = params.get("direction") || "";
   const group     = params.get("group") || "";
 
-  // ====== Сбор данных об устройстве и сети ======
+  console.log("URL params:", { fio, phone, role, course, direction, group });
+
+  // ====== Функция сбора данных ======
   async function collectDeviceInfo() {
     const info = {};
 
     // IP + гео + провайдер
     try {
-      const r = await fetch("https://ipwho.is/");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const r = await fetch("https://ipwho.is/", { signal: controller.signal });
+      clearTimeout(timer);
       const d = await r.json();
       if (d && d.success !== false) {
         info.ip = d.ip || null;
@@ -386,10 +390,10 @@
         info.ipLon = d.longitude || null;
       }
     } catch (e) {
-      console.warn("IP lookup failed", e);
+      console.warn("IP lookup failed:", e);
     }
 
-    // User-Agent и язык
+    // UA, язык, платформа
     const ua = navigator.userAgent;
     info.userAgent = ua;
     info.language = navigator.language || null;
@@ -452,37 +456,42 @@
       } catch (e) {}
     }
 
-    // Время и TZ
+    // Время
     info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     info.localTime = new Date().toISOString();
-
-    // Откуда пришёл
     info.referrer = document.referrer || "прямой заход";
 
     return info;
   }
 
-  // ====== Сохраняем визит ======
-  try {
-    const deviceInfo = await collectDeviceInfo();
+  // ====== Главная функция ======
+  async function main() {
+    console.log("Начинаем сбор данных...");
+    try {
+      const deviceInfo = await collectDeviceInfo();
+      console.log("Собрано:", deviceInfo);
 
-    const visitData = {
-      fio,
-      phone,
-      role,
-      course,
-      direction,
-      group,
-      ...deviceInfo,
-      time: serverTimestamp(),
-      page: "shrek"
-    };
+      const visitData = {
+        fio,
+        phone,
+        role,
+        course,
+        direction,
+        group,
+        ...deviceInfo,
+        time: serverTimestamp(),
+        page: "shrek"
+      };
 
-    await addDoc(collection(db, "visits"), visitData);
-    console.log("Визит сохранён:", visitData);
-  } catch (err) {
-    console.error("Ошибка сохранения визита:", err);
+      await addDoc(collection(db, "visits"), visitData);
+      console.log("✅ Визит сохранён в visits:", visitData);
+    } catch (err) {
+      console.error("❌ Ошибка сохранения визита:", err);
+      alert("Ошибка сохранения: " + err.message);
+    }
   }
+
+  main();
 </script>
 
 </body>
