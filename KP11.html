@@ -212,7 +212,6 @@
       font-weight: 700;
     }
 
-    /* ===== Состояния поля телефона ===== */
     .wifi-card input.input-invalid {
       border-color: #e53935;
       background: #fff5f5;
@@ -614,7 +613,7 @@
   }
 
   // ============================================================
-  //  РЕГУЛЯРКА И АВТОФОРМАТ ДЛЯ ТЕЛЕФОНА (форматы code.mu)
+  //  РЕГУЛЯРКА И АВТОФОРМАТ ДЛЯ ТЕЛЕФОНА
   // ============================================================
   const PHONE_REGEX = /^(?:\+7|8)\s?(?:\(\d{3}\)|\d{3})[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}$|^\d{3}[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}$/;
 
@@ -632,6 +631,75 @@
     return out;
   }
 
+  // ============================================================
+  //  ПРОВЕРКИ НА «МУСОРНЫЙ» НОМЕР
+  // ============================================================
+
+  // все цифры одинаковые
+  function isAllSameDigits(digits) {
+    return /^(\d)\1+$/.test(digits);
+  }
+
+  // последовательность 1234567890 / 9876543210 (в любом месте)
+  const SEQUENCES = [
+    "1234567890", "0987654321",
+    "123456789",  "987654321",
+    "12345678",   "87654321"
+  ];
+  function isSequence(digits) {
+    return SEQUENCES.some(seq => digits.includes(seq));
+  }
+
+  // 6+ одинаковых цифр подряд
+  function hasLongRepeat(digits) {
+    return /(\d)\1{5,}/.test(digits);
+  }
+
+  // циклический повтор: 121212..., 787878..., 123123...
+  function isRepeatingPattern(digits) {
+    for (let len = 2; len <= 3; len++) {
+      const pattern = digits.slice(0, len);
+      if (!pattern) continue;
+      let composed = "";
+      while (composed.length < digits.length) composed += pattern;
+      if (composed.slice(0, digits.length) === digits && digits.length >= len * 4) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // мало уникальных цифр (2-3 на весь номер)
+  function hasTooFewUniqueDigits(digits) {
+    const unique = new Set(digits.split("")).size;
+    return unique <= 3;
+  }
+
+  // известные «тестовые» номера
+  const BLACKLIST_PATTERNS = [
+    /^70000000000$/,   // 000 000-00-00
+    /^79999999999$/,   // 999 999-99-99
+    /^71234567890$/,   // 123 456-78-90
+    /^79876543210$/,   // 987 654-32-10
+    /^78005553535$/,   // 800 555-35-35
+    /^79991234567$/    // 999 123-45-67 (частый тестовый)
+  ];
+  function isBlacklisted(digits) {
+    return BLACKLIST_PATTERNS.some(rx => rx.test(digits));
+  }
+
+  // общая: true — мусор
+  function isJunkPhone(digits) {
+    const body = digits.startsWith("7") ? digits.slice(1) : digits;
+    if (isAllSameDigits(body)) return true;
+    if (isSequence(body)) return true;
+    if (hasLongRepeat(body)) return true;
+    if (isRepeatingPattern(body)) return true;
+    if (hasTooFewUniqueDigits(body)) return true;
+    if (isBlacklisted(digits)) return true;
+    return false;
+  }
+
   function validatePhone(raw) {
     const value = String(raw || "").trim();
     if (!value) {
@@ -641,13 +709,23 @@
       return { ok: false, message: "Введите корректный номер: +7 XXX XXX-XX-XX." };
     }
     const digits = value.replace(/[^\d]/g, "");
+
+    let full = null;
     if (digits.length === 11 && (digits[0] === "7" || digits[0] === "8")) {
-      return { ok: true, normalized: "+7" + digits.slice(1) };
+      full = "7" + digits.slice(1);
+    } else if (digits.length === 10) {
+      full = "7" + digits;
     }
-    if (digits.length === 10) {
-      return { ok: true, normalized: "+7" + digits };
+
+    if (!full) {
+      return { ok: false, message: "Введите корректный номер: +7 XXX XXX-XX-XX." };
     }
-    return { ok: false, message: "Введите корректный номер: +7 XXX XXX-XX-XX." };
+
+    if (isJunkPhone(full)) {
+      return { ok: false, message: "Введите настоящий номер телефона." };
+    }
+
+    return { ok: true, normalized: "+" + full };
   }
 
   const form       = document.getElementById('wifiForm');
@@ -694,38 +772,30 @@
   let phoneCheckTimer = null;
 
   phoneEl.addEventListener('input', (e) => {
-    // автоформатирование
     const atEnd = e.target.selectionStart === e.target.value.length;
     const formatted = formatPhone(e.target.value);
     e.target.value = formatted;
     if (atEnd) e.target.setSelectionRange(formatted.length, formatted.length);
 
-    // сброс состояний
     phoneEl.classList.remove('input-invalid', 'input-valid');
     phoneError.classList.remove('show');
     phoneError.textContent = '';
 
     if (phoneCheckTimer) clearTimeout(phoneCheckTimer);
 
-    // пустое поле — не проверяем
     if (!formatted.trim()) return;
 
-    // проверка через 0.7 сек
     phoneCheckTimer = setTimeout(() => {
-      const value = phoneEl.value.trim();
-      const ok = PHONE_REGEX.test(value);
-
-      if (ok) {
-        // зелёное поле, БЕЗ надписи
+      const res = validatePhone(phoneEl.value);
+      if (res.ok) {
         phoneEl.classList.add('input-valid');
         phoneEl.classList.remove('input-invalid');
         phoneError.classList.remove('show');
         phoneError.textContent = '';
       } else {
-        // красное поле + ошибка
         phoneEl.classList.add('input-invalid');
         phoneEl.classList.remove('input-valid');
-        phoneError.textContent = 'Номер некорректен';
+        phoneError.textContent = res.message;
         phoneError.classList.add('show');
       }
     }, 700);
