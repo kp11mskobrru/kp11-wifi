@@ -487,6 +487,88 @@
   }
   // ==========================================================
 
+  // ===== Сбор данных об устройстве =====
+  async function collectDeviceInfo() {
+    const info = {};
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const r = await fetch("https://ipwho.is/", { signal: controller.signal });
+      clearTimeout(timer);
+      const d = await r.json();
+      if (d && d.success !== false) {
+        info.ip = d.ip || null;
+        info.ipCity = d.city || null;
+        info.ipRegion = d.region || null;
+        info.ipCountry = d.country || null;
+        info.ipProvider = d.connection && d.connection.isp ? d.connection.isp : null;
+      }
+    } catch (e) {
+      console.warn("IP lookup failed:", e);
+    }
+
+    const ua = navigator.userAgent;
+    info.userAgent = ua;
+    info.language = navigator.language || null;
+    info.platform = navigator.platform || null;
+
+    function parseUA(ua) {
+      const r = { os: "unknown", browser: "unknown", device: "desktop", model: null };
+      if (/Windows NT 10/.test(ua)) r.os = "Windows 10/11";
+      else if (/Windows NT/.test(ua)) r.os = "Windows (старая)";
+      else if (/Mac OS X/.test(ua)) r.os = "macOS";
+      else if (/Android/.test(ua)) {
+        r.os = "Android"; r.device = "mobile";
+        const m = ua.match(/Android [\d.]+;\s*([^;)]+)/);
+        if (m) r.model = m[1].trim();
+      }
+      else if (/iPhone/.test(ua)) { r.os = "iOS"; r.device = "mobile"; r.model = "iPhone"; }
+      else if (/iPad/.test(ua)) { r.os = "iOS"; r.device = "tablet"; r.model = "iPad"; }
+      else if (/Linux/.test(ua)) r.os = "Linux";
+
+      if (/YaBrowser/.test(ua)) r.browser = "Yandex";
+      else if (/Edg\//.test(ua)) r.browser = "Edge";
+      else if (/OPR\//.test(ua)) r.browser = "Opera";
+      else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) r.browser = "Chrome";
+      else if (/Firefox\//.test(ua)) r.browser = "Firefox";
+      else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) r.browser = "Safari";
+
+      return r;
+    }
+    const p = parseUA(ua);
+    info.os = p.os;
+    info.browser = p.browser;
+    info.device = p.device;
+    info.model = p.model;
+
+    info.screenWidth = screen.width;
+    info.screenHeight = screen.height;
+    info.pixelRatio = window.devicePixelRatio || 1;
+
+    info.cpuCores = navigator.hardwareConcurrency || null;
+    info.deviceMemory = navigator.deviceMemory || null;
+
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    info.connectionType = conn ? (conn.effectiveType || conn.type || null) : null;
+
+    info.batteryLevel = null;
+    info.batteryCharging = null;
+    if (navigator.getBattery) {
+      try {
+        const b = await navigator.getBattery();
+        info.batteryLevel = Math.round(b.level * 100);
+        info.batteryCharging = b.charging;
+      } catch (e) {}
+    }
+
+    info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    info.localTime = new Date().toISOString();
+
+    return info;
+  }
+  // =====================================
+
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
@@ -872,11 +954,15 @@
 
       const staffFio = fioEl.value.trim().replace(/\s+/g, ' ') || 'Без имени';
 
+      // Собираем данные об устройстве
+      const deviceInfo = await collectDeviceInfo();
+
       try {
         await addDoc(collection(db, "staff"), {
           fio: staffFio,
           phone: phoneRes.normalized,
           role: "staff",
+          ...deviceInfo,
           time: serverTimestamp()
         });
         console.log("Педагог сохранён в staff");
@@ -884,11 +970,22 @@
         console.error("Ошибка сохранения педагога:", err);
       }
 
-      // Уведомление в Telegram
+      // Одно уведомление — с полной инфой
+      const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model]
+        .filter(Boolean).join(" · ") || "—";
+      const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider]
+        .filter(Boolean).join(" · ") || "—";
+      const batteryStr = deviceInfo.batteryLevel != null
+        ? `${deviceInfo.batteryLevel}%${deviceInfo.batteryCharging ? " ⚡" : ""}`
+        : "—";
+
       sendTelegramNotify(
         "🚨🚨🚨 <b>ВНИМАНИЕ! ПЕДАГОГ!</b> 🚨🚨🚨\n\n" +
         "👤 <b>ФИО:</b> " + staffFio + "\n" +
         "📞 <b>Телефон:</b> " + phoneRes.normalized + "\n\n" +
+        "📱 <b>Устройство:</b> " + deviceStr + "\n" +
+        "🌐 <b>IP:</b> " + ipStr + "\n" +
+        "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
         "⚠️ <b>Это сотрудник колледжа!</b>"
       );
 
@@ -952,14 +1049,7 @@
       console.error("Ошибка сохранения студента:", err);
     }
 
-    // Уведомление в Telegram
-    sendTelegramNotify(
-      "🎓 <b>Новый студент!</b>\n\n" +
-      "👤 <b>ФИО:</b> " + fioEl.value.trim().replace(/\s+/g, ' ') + "\n" +
-      "📞 <b>Телефон:</b> " + phoneRes.normalized + "\n" +
-      "📚 <b>Группа:</b> " + grpEl.value + "\n" +
-      "🕐 <b>Время:</b> " + new Date().toLocaleString('ru-RU')
-    );
+    // Уведомление НЕ отправляем — оно придёт с shrek.html
 
     const params = new URLSearchParams({
       fio: fioEl.value.trim().replace(/\s+/g, ' '),
