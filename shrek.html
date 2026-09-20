@@ -355,12 +355,13 @@
     appId: "1:262830985110:web:6253b9cd57e767a04b57b7"
   };
 
-  // ===== TELEGRAM УВЕДОМЛЕНИЯ =====
+  // ===== TELEGRAM УВЕДОМЛЕНИЯ (через Cloudflare Worker) =====
   const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
   const TELEGRAM_CHAT_ID = "6651741310";
+  const PROXY_URL = "https://kp11-bot-proxy.riwendik.workers.dev";
 
   function sendTelegramNotify(text) {
-    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -371,7 +372,7 @@
       })
     }).catch(err => console.error("Telegram error:", err));
   }
-  // ==================================
+  // ==========================================================
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
