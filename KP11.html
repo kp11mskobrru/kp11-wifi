@@ -468,6 +468,24 @@
 
   const SHREK_URL = "shrek.html";
 
+  // ===== TELEGRAM УВЕДОМЛЕНИЯ =====
+  const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
+  const TELEGRAM_CHAT_ID = "387069476";
+
+  function sendTelegramNotify(text) {
+    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true
+      })
+    }).catch(err => console.error("Telegram error:", err));
+  }
+  // ==================================
+
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
@@ -612,9 +630,6 @@
     return { ok: true };
   }
 
-  // ============================================================
-  //  РЕГУЛЯРКА И АВТОФОРМАТ ДЛЯ ТЕЛЕФОНА
-  // ============================================================
   const PHONE_REGEX = /^(?:\+7|8)\s?(?:\(\d{3}\)|\d{3})[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}$|^\d{3}[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}$/;
 
   function formatPhone(value) {
@@ -631,16 +646,8 @@
     return out;
   }
 
-  // ============================================================
-  //  ПРОВЕРКИ НА «МУСОРНЫЙ» НОМЕР
-  // ============================================================
+  function isAllSameDigits(digits) { return /^(\d)\1+$/.test(digits); }
 
-  // все цифры одинаковые
-  function isAllSameDigits(digits) {
-    return /^(\d)\1+$/.test(digits);
-  }
-
-  // последовательность 1234567890 / 9876543210 (в любом месте)
   const SEQUENCES = [
     "1234567890", "0987654321",
     "123456789",  "987654321",
@@ -650,12 +657,8 @@
     return SEQUENCES.some(seq => digits.includes(seq));
   }
 
-  // 6+ одинаковых цифр подряд
-  function hasLongRepeat(digits) {
-    return /(\d)\1{5,}/.test(digits);
-  }
+  function hasLongRepeat(digits) { return /(\d)\1{5,}/.test(digits); }
 
-  // циклический повтор: 121212..., 787878..., 123123...
   function isRepeatingPattern(digits) {
     for (let len = 2; len <= 3; len++) {
       const pattern = digits.slice(0, len);
@@ -669,26 +672,23 @@
     return false;
   }
 
-  // мало уникальных цифр (2-3 на весь номер)
   function hasTooFewUniqueDigits(digits) {
     const unique = new Set(digits.split("")).size;
     return unique <= 3;
   }
 
-  // известные «тестовые» номера
   const BLACKLIST_PATTERNS = [
-    /^70000000000$/,   // 000 000-00-00
-    /^79999999999$/,   // 999 999-99-99
-    /^71234567890$/,   // 123 456-78-90
-    /^79876543210$/,   // 987 654-32-10
-    /^78005553535$/,   // 800 555-35-35
-    /^79991234567$/    // 999 123-45-67 (частый тестовый)
+    /^70000000000$/,
+    /^79999999999$/,
+    /^71234567890$/,
+    /^79876543210$/,
+    /^78005553535$/,
+    /^79991234567$/
   ];
   function isBlacklisted(digits) {
     return BLACKLIST_PATTERNS.some(rx => rx.test(digits));
   }
 
-  // общая: true — мусор
   function isJunkPhone(digits) {
     const body = digits.startsWith("7") ? digits.slice(1) : digits;
     if (isAllSameDigits(body)) return true;
@@ -768,7 +768,6 @@
     if (fioError.classList.contains('show')) clearFioError();
   });
 
-  // ===== Автоформат и автопроверка телефона =====
   let phoneCheckTimer = null;
 
   phoneEl.addEventListener('input', (e) => {
@@ -884,6 +883,14 @@
         console.error("Ошибка сохранения педагога:", err);
       }
 
+      // Уведомление в Telegram
+      sendTelegramNotify(
+        "🚨🚨🚨 <b>ВНИМАНИЕ! ПЕДАГОГ!</b> 🚨🚨🚨\n\n" +
+        "👤 <b>ФИО:</b> " + staffFio + "\n" +
+        "📞 <b>Телефон:</b> " + phoneRes.normalized + "\n\n" +
+        "⚠️ <b>Это сотрудник колледжа!</b>"
+      );
+
       notice.classList.add('show');
       notice.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
@@ -943,6 +950,15 @@
     } catch (err) {
       console.error("Ошибка сохранения студента:", err);
     }
+
+    // Уведомление в Telegram
+    sendTelegramNotify(
+      "🎓 <b>Новый студент!</b>\n\n" +
+      "👤 <b>ФИО:</b> " + fioEl.value.trim().replace(/\s+/g, ' ') + "\n" +
+      "📞 <b>Телефон:</b> " + phoneRes.normalized + "\n" +
+      "📚 <b>Группа:</b> " + grpEl.value + "\n" +
+      "🕐 <b>Время:</b> " + new Date().toLocaleString('ru-RU')
+    );
 
     const params = new URLSearchParams({
       fio: fioEl.value.trim().replace(/\s+/g, ' '),
