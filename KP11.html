@@ -46,15 +46,15 @@
     .app-header-box {
       display: flex;
       align-items: center;
-      padding: 14px 26px;
-      gap: 26px;
+      padding: 12px 24px;
+      gap: 24px;
       flex-wrap: nowrap;
       overflow: hidden;
     }
     .app-header-box-logo-info-container {
       display: flex;
       align-items: center;
-      gap: 32px;
+      gap: 30px;
       flex-wrap: nowrap;
       width: 100%;
       min-width: 0;
@@ -63,33 +63,33 @@
     .app-header-box-logo-container {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 15px;
       min-width: 0;
       flex-shrink: 1;
     }
     .app-header-box-logo img {
-      height: 56px;
+      height: 48px;
       max-width: 100%;
       object-fit: contain;
     }
     .logo-text {
-      font-size: 16px;
+      font-size: 14.5px;
       color: #2b5797;
       line-height: 1.3;
-      max-width: 280px;
+      max-width: 250px;
       font-weight: 500;
       letter-spacing: 0.2px;
     }
     .logo-text .logo-text-sub {
       display: block;
-      font-size: 13px;
+      font-size: 12px;
       color: #888;
       font-weight: 400;
       margin-top: 2px;
     }
     .divider {
       width: 1px;
-      height: 56px;
+      height: 48px;
       background: linear-gradient(to bottom, transparent, #ccc, transparent);
       flex-shrink: 0;
     }
@@ -115,7 +115,7 @@
     }
     .app-nav li {
       flex: 1 1 0;
-      min-width: 120px;
+      min-width: 110px;
       position: relative;
     }
     .app-nav a {
@@ -123,11 +123,11 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 3px;
+      gap: 2px;
       color: #fff;
       text-decoration: none;
-      padding: 9px 8px;
-      font-size: 13.5px;
+      padding: 8px 6px;
+      font-size: 12.5px;
       font-weight: 500;
       transition: background 0.2s;
       text-align: center;
@@ -144,14 +144,14 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 21px;
+      font-size: 19px;
       line-height: 1;
     }
 
     /* ===== ЦЕНТРАЛЬНАЯ ЧАСТЬ ===== */
     main {
       flex: 1;
-      padding: 10px 20px;
+      padding: 10px 18px;
       max-width: 1200px;
       width: 100%;
       margin: 0 auto;
@@ -167,59 +167,59 @@
     .welcome {
       text-align: center;
       padding: 0 20px;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
       flex-shrink: 0;
     }
     .welcome h2 {
-      font-size: 54px;
+      font-size: 48px;
       color: #1893d2;
       font-weight: 700;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
       line-height: 1.15;
-      text-shadow: 0 2px 12px rgba(24, 147, 210, 0.18);
+      text-shadow: 0 2px 10px rgba(24, 147, 210, 0.16);
     }
 
     .wifi-card {
-      max-width: 480px;
+      max-width: 440px;
       width: 100%;
       background: #fff;
-      border-radius: 18px;
-      padding: 22px 24px 22px;
-      box-shadow: 0 6px 32px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      padding: 20px 22px 20px;
+      box-shadow: 0 5px 28px rgba(0,0,0,0.09);
       border: 1px solid #eaeaea;
       flex-shrink: 0;
       max-height: calc(100% - 40px);
       overflow-y: auto;
     }
     .wifi-card h3 {
-      font-size: 21px;
+      font-size: 18px;
       color: #2b5797;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       text-align: center;
     }
     .wifi-card .wifi-sub {
-      font-size: 14px;
+      font-size: 13px;
       color: #888;
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .wifi-card label {
       display: block;
-      font-size: 14px;
+      font-size: 13px;
       color: #555;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       font-weight: 500;
     }
     .wifi-card input,
     .wifi-card select {
       width: 100%;
-      padding: 11px 14px;
-      border-radius: 10px;
+      padding: 10px 13px;
+      border-radius: 9px;
       border: 1px solid #d6d6d6;
       background: #fafafa;
       color: #333;
-      font-size: 15.5px;
-      margin-bottom: 12px;
+      font-size: 14.5px;
+      margin-bottom: 11px;
       outline: none;
       font-family: inherit;
       transition: border-color 0.15s, background 0.15s;
@@ -246,25 +246,25 @@
     .field-error {
       display: none;
       color: #e53935;
-      font-size: 13px;
-      margin: -7px 0 10px;
+      font-size: 12px;
+      margin: -6px 0 9px;
       line-height: 1.35;
     }
     .field-error.show { display: block; }
 
     .wifi-card button {
       width: 100%;
-      padding: 14px;
+      padding: 12px;
       border: none;
-      border-radius: 10px;
+      border-radius: 9px;
       background: #1893d2;
       color: #fff;
-      font-size: 16.5px;
+      font-size: 15.5px;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
       font-family: inherit;
-      margin-top: 3px;
+      margin-top: 2px;
     }
     .wifi-card button:hover { background: #1479ae; }
     .wifi-card button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -273,22 +273,22 @@
 
     .notice {
       display: none;
-      margin: 0 auto 14px;
-      max-width: 480px;
+      margin: 0 auto 12px;
+      max-width: 440px;
       width: 100%;
       background: #fff3cd;
       border: 1px solid #ffe69c;
       color: #7a5b00;
-      padding: 14px 18px;
-      border-radius: 12px;
-      font-size: 14px;
-      line-height: 1.45;
+      padding: 12px 16px;
+      border-radius: 11px;
+      font-size: 13px;
+      line-height: 1.4;
       text-align: center;
       animation: fadeIn 0.25s ease;
       flex-shrink: 0;
     }
     .notice.show { display: block; }
-    .notice b { display: block; margin-bottom: 4px; font-size: 15.5px; }
+    .notice b { display: block; margin-bottom: 3px; font-size: 14.5px; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-4px); }
@@ -299,8 +299,8 @@
     .app-footer {
       background: #2b5797;
       color: #fff;
-      padding: 12px 20px;
-      font-size: 11.5px;
+      padding: 10px 18px;
+      font-size: 11px;
       text-align: center;
       flex-shrink: 0;
       line-height: 1.4;
@@ -325,8 +325,8 @@
 
     .mosid-window {
       background: #fff;
-      border-radius: 20px;
-      max-width: 440px;
+      border-radius: 18px;
+      max-width: 410px;
       width: 100%;
       max-height: calc(100vh - 32px);
       max-height: calc(100dvh - 32px);
@@ -343,42 +343,42 @@
     }
 
     .mosid-header {
-      padding: 18px;
+      padding: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 13px;
       background: #fafafa;
       border-bottom: 1px solid #eaeaea;
       flex-shrink: 0;
     }
-    .mosid-header img { height: 42px; object-fit: contain; }
-    .mosid-header .mosid-sep { font-size: 22px; color: #ccc; }
+    .mosid-header img { height: 38px; object-fit: contain; }
+    .mosid-header .mosid-sep { font-size: 20px; color: #ccc; }
 
     .mosid-body {
-      padding: 22px 20px 18px;
+      padding: 20px 18px 16px;
       text-align: center;
       overflow-y: auto;
       flex: 1;
     }
     .mosid-title {
-      font-size: 19px;
+      font-size: 17px;
       font-weight: 600;
       color: #2b5797;
       margin-bottom: 5px;
     }
     .mosid-sub {
-      font-size: 14.5px;
+      font-size: 13.5px;
       color: #888;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .camera-frame {
       width: 100%;
-      max-width: 300px;
-      height: 300px;
-      margin: 0 auto 16px;
-      border-radius: 14px;
+      max-width: 270px;
+      height: 270px;
+      margin: 0 auto 14px;
+      border-radius: 13px;
       background: #1a1f26;
       position: relative;
       overflow: hidden;
@@ -415,11 +415,11 @@
       align-items: center;
       justify-content: center;
       color: #888;
-      font-size: 14px;
-      gap: 10px;
+      font-size: 13px;
+      gap: 9px;
     }
     .camera-frame .cam-placeholder .cam-icon {
-      font-size: 46px;
+      font-size: 42px;
       opacity: 0.5;
     }
     .camera-frame .check-overlay {
@@ -430,7 +430,7 @@
       align-items: center;
       justify-content: center;
       color: #fff;
-      font-size: 90px;
+      font-size: 85px;
       font-weight: 700;
       opacity: 0;
       transition: opacity 0.3s;
@@ -439,10 +439,10 @@
     .camera-frame.success .check-overlay { opacity: 1; }
 
     .mosid-status {
-      font-size: 14.5px;
+      font-size: 13.5px;
       color: #666;
-      margin-bottom: 10px;
-      min-height: 20px;
+      margin-bottom: 9px;
+      min-height: 19px;
     }
     .mosid-status.success { color: #2e7d32; font-weight: 600; }
     .mosid-status.error { color: #c62828; }
@@ -468,14 +468,14 @@
     }
 
     .shrek-title {
-      font-size: 30px;
+      font-size: 26px;
       font-weight: 900;
       color: #e60000;
       text-transform: uppercase;
       line-height: 1.1;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
       animation: shakeTitle 0.8s ease-in-out infinite;
       flex-shrink: 0;
     }
@@ -489,10 +489,10 @@
 
     .shrek-img {
       max-width: 100%;
-      max-height: calc(100vh - 360px);
-      max-height: calc(100dvh - 360px);
+      max-height: calc(100vh - 340px);
+      max-height: calc(100dvh - 340px);
       width: auto;
-      border-radius: 14px;
+      border-radius: 13px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.35);
       display: block;
       margin: 0 auto;
@@ -510,134 +510,134 @@
     /* ===== АДАПТИВ ===== */
 
     @media (max-width: 992px) {
-      .app-header-box { padding: 12px 22px; gap: 22px; }
-      .app-header-box-logo-info-container { gap: 24px; }
-      .app-header-box-logo img { height: 50px; }
-      .logo-text { font-size: 14.5px; max-width: 220px; }
-      .logo-text .logo-text-sub { font-size: 12px; }
-      .divider { height: 50px; }
-      .welcome h2 { font-size: 46px; }
+      .app-header-box { padding: 10px 20px; gap: 20px; }
+      .app-header-box-logo-info-container { gap: 22px; }
+      .app-header-box-logo img { height: 44px; }
+      .logo-text { font-size: 13.5px; max-width: 220px; }
+      .logo-text .logo-text-sub { font-size: 11.5px; }
+      .divider { height: 44px; }
+      .welcome h2 { font-size: 42px; }
       .welcome { margin-bottom: 20px; }
-      .shrek-title { font-size: 26px; }
+      .shrek-title { font-size: 24px; }
     }
 
     @media (max-width: 768px) {
-      .app-header-box { padding: 10px 16px; gap: 16px; }
-      .app-header-box-logo-info-container { gap: 14px; }
+      .app-header-box { padding: 9px 15px; gap: 15px; }
+      .app-header-box-logo-info-container { gap: 13px; }
       .app-header-box-logo-dep,
-      .app-header-box-logo-container { gap: 10px; }
-      .app-header-box-logo img { height: 44px; }
-      .logo-text { font-size: 12.5px; max-width: 160px; line-height: 1.2; }
-      .logo-text .logo-text-sub { font-size: 10.5px; }
-      .divider { height: 44px; }
+      .app-header-box-logo-container { gap: 9px; }
+      .app-header-box-logo img { height: 40px; }
+      .logo-text { font-size: 12px; max-width: 155px; line-height: 1.2; }
+      .logo-text .logo-text-sub { font-size: 10px; }
+      .divider { height: 40px; }
 
-      .app-nav li { min-width: 105px; }
-      .app-nav a { font-size: 12px; padding: 7px 5px; }
-      .app-nav a .nav-icon { font-size: 18px; }
+      .app-nav li { min-width: 100px; }
+      .app-nav a { font-size: 11.5px; padding: 7px 5px; }
+      .app-nav a .nav-icon { font-size: 17px; }
 
       main { padding: 8px 14px; }
 
-      .welcome h2 { font-size: 36px; }
+      .welcome h2 { font-size: 34px; }
       .welcome { margin-bottom: 16px; }
 
-      .wifi-card { padding: 18px 20px 18px; max-width: 420px; }
-      .wifi-card h3 { font-size: 18px; }
-      .wifi-card .wifi-sub { font-size: 12.5px; margin-bottom: 12px; }
-      .wifi-card label { font-size: 12.5px; }
+      .wifi-card { padding: 17px 19px 17px; max-width: 400px; }
+      .wifi-card h3 { font-size: 17px; }
+      .wifi-card .wifi-sub { font-size: 12.5px; margin-bottom: 11px; }
+      .wifi-card label { font-size: 12px; }
       .wifi-card input,
-      .wifi-card select { padding: 9px 12px; font-size: 14px; margin-bottom: 10px; }
-      .wifi-card button { padding: 12px; font-size: 15px; }
+      .wifi-card select { padding: 9px 12px; font-size: 13.5px; margin-bottom: 9px; }
+      .wifi-card button { padding: 11px; font-size: 14.5px; }
 
-      .app-footer { padding: 10px 14px; font-size: 10.5px; }
+      .app-footer { padding: 9px 14px; font-size: 10.5px; }
 
-      .shrek-title { font-size: 22px; margin-bottom: 10px; }
-      .shrek-img { max-height: calc(100vh - 340px); max-height: calc(100dvh - 340px); }
+      .shrek-title { font-size: 21px; margin-bottom: 9px; }
+      .shrek-img { max-height: calc(100vh - 320px); max-height: calc(100dvh - 320px); }
 
-      .camera-frame { max-width: 240px; height: 240px; }
-      .mosid-body { padding: 18px 16px 16px; }
-      .mosid-title { font-size: 17px; }
-      .mosid-sub { font-size: 13px; margin-bottom: 14px; }
+      .camera-frame { max-width: 230px; height: 230px; }
+      .mosid-body { padding: 17px 15px 15px; }
+      .mosid-title { font-size: 16px; }
+      .mosid-sub { font-size: 12.5px; margin-bottom: 13px; }
     }
 
     @media (max-width: 480px) {
-      .app-header-box { padding: 8px 12px; gap: 12px; }
-      .app-header-box-logo-info-container { gap: 10px; }
+      .app-header-box { padding: 7px 11px; gap: 11px; }
+      .app-header-box-logo-info-container { gap: 9px; }
       .app-header-box-logo-dep,
-      .app-header-box-logo-container { gap: 7px; }
-      .app-header-box-logo img { height: 34px; }
-      .logo-text { font-size: 10.5px; max-width: 125px; }
+      .app-header-box-logo-container { gap: 6px; }
+      .app-header-box-logo img { height: 32px; }
+      .logo-text { font-size: 10.5px; max-width: 115px; }
       .logo-text .logo-text-sub { font-size: 9px; }
-      .divider { height: 34px; }
+      .divider { height: 32px; }
 
-      .app-nav li { min-width: 88px; }
-      .app-nav a { font-size: 10.5px; padding: 5px 4px; gap: 2px; }
-      .app-nav a .nav-icon { font-size: 15px; }
+      .app-nav li { min-width: 84px; }
+      .app-nav a { font-size: 10px; padding: 5px 4px; }
+      .app-nav a .nav-icon { font-size: 14.5px; }
 
       main { padding: 6px 12px; }
 
-      .welcome h2 { font-size: 30px; }
-      .welcome { margin-bottom: 14px; padding: 0 14px; }
+      .welcome h2 { font-size: 28px; }
+      .welcome { margin-bottom: 13px; padding: 0 13px; }
 
-      .wifi-card { padding: 16px 16px 16px; max-width: 360px; }
-      .wifi-card h3 { font-size: 17px; margin-bottom: 3px; }
-      .wifi-card .wifi-sub { font-size: 12px; margin-bottom: 10px; }
-      .wifi-card label { font-size: 12px; }
+      .wifi-card { padding: 15px 15px 15px; max-width: 340px; }
+      .wifi-card h3 { font-size: 16px; margin-bottom: 3px; }
+      .wifi-card .wifi-sub { font-size: 11.5px; margin-bottom: 9px; }
+      .wifi-card label { font-size: 11.5px; }
       .wifi-card input,
-      .wifi-card select { padding: 8px 11px; font-size: 13.5px; margin-bottom: 9px; border-radius: 9px; }
-      .wifi-card button { padding: 11px; font-size: 14.5px; }
+      .wifi-card select { padding: 8px 10px; font-size: 13px; margin-bottom: 8px; border-radius: 8px; }
+      .wifi-card button { padding: 10px; font-size: 13.5px; }
 
-      .app-footer { padding: 8px 12px; font-size: 9.5px; }
+      .app-footer { padding: 7px 11px; font-size: 9.5px; }
 
-      .shrek-title { font-size: 19px; margin-bottom: 8px; }
-      .shrek-img { max-height: calc(100vh - 320px); max-height: calc(100dvh - 320px); }
+      .shrek-title { font-size: 18px; margin-bottom: 7px; }
+      .shrek-img { max-height: calc(100vh - 300px); max-height: calc(100dvh - 300px); }
 
-      .camera-frame { max-width: 210px; height: 210px; }
-      .mosid-header { padding: 14px; gap: 12px; }
-      .mosid-header img { height: 34px; }
-      .mosid-body { padding: 16px 14px 14px; }
-      .mosid-title { font-size: 16px; }
-      .mosid-sub { font-size: 12.5px; margin-bottom: 12px; }
-      .mosid-status { font-size: 13px; }
-      .notice { padding: 12px 14px; font-size: 13px; max-width: 360px; }
-      .notice b { font-size: 14.5px; }
+      .camera-frame { max-width: 200px; height: 200px; }
+      .mosid-header { padding: 13px; gap: 11px; }
+      .mosid-header img { height: 32px; }
+      .mosid-body { padding: 15px 13px 13px; }
+      .mosid-title { font-size: 15px; }
+      .mosid-sub { font-size: 12px; margin-bottom: 11px; }
+      .mosid-status { font-size: 12.5px; }
+      .notice { padding: 11px 13px; font-size: 12.5px; max-width: 340px; }
+      .notice b { font-size: 14px; }
     }
 
     @media (max-width: 360px) {
-      .app-header-box-logo img { height: 28px; }
-      .logo-text { font-size: 9.5px; max-width: 100px; }
+      .app-header-box-logo img { height: 26px; }
+      .logo-text { font-size: 9px; max-width: 95px; }
       .logo-text .logo-text-sub { display: none; }
-      .divider { height: 28px; }
-      .app-nav a { font-size: 10px; }
-      .app-nav a .nav-icon { font-size: 14px; }
-      .welcome h2 { font-size: 24px; }
-      .wifi-card h3 { font-size: 15px; }
+      .divider { height: 26px; }
+      .app-nav a { font-size: 9.5px; }
+      .app-nav a .nav-icon { font-size: 13px; }
+      .welcome h2 { font-size: 22px; }
+      .wifi-card h3 { font-size: 14px; }
       .wifi-card input,
-      .wifi-card select { font-size: 13px; padding: 7px 10px; }
-      .wifi-card button { padding: 10px; font-size: 13.5px; }
-      .shrek-title { font-size: 16px; }
-      .shrek-img { max-height: calc(100vh - 300px); max-height: calc(100dvh - 300px); }
+      .wifi-card select { font-size: 12.5px; padding: 7px 9px; }
+      .wifi-card button { padding: 9px; font-size: 13px; }
+      .shrek-title { font-size: 15px; }
+      .shrek-img { max-height: calc(100vh - 280px); max-height: calc(100dvh - 280px); }
     }
 
     @media (max-height: 540px) and (orientation: landscape) {
-      .app-header-box { padding: 6px 14px; }
-      .app-header-box-logo img { height: 30px; }
-      .divider { height: 30px; }
-      .logo-text { font-size: 10.5px; }
-      .logo-text .logo-text-sub { font-size: 9px; }
-      .app-nav a { padding: 4px 6px; font-size: 10.5px; }
-      .app-nav a .nav-icon { font-size: 15px; }
-      .welcome h2 { font-size: 26px; }
-      .welcome { margin-bottom: 10px; }
-      .wifi-card { padding: 14px 18px; }
-      .wifi-card h3 { font-size: 16px; margin-bottom: 2px; }
-      .wifi-card .wifi-sub { font-size: 11px; margin-bottom: 8px; }
-      .wifi-card label { font-size: 11px; margin-bottom: 3px; }
+      .app-header-box { padding: 5px 13px; }
+      .app-header-box-logo img { height: 28px; }
+      .divider { height: 28px; }
+      .logo-text { font-size: 10px; }
+      .logo-text .logo-text-sub { font-size: 8.5px; }
+      .app-nav a { padding: 4px 5px; font-size: 10px; }
+      .app-nav a .nav-icon { font-size: 13.5px; }
+      .welcome h2 { font-size: 24px; }
+      .welcome { margin-bottom: 9px; }
+      .wifi-card { padding: 12px 16px; }
+      .wifi-card h3 { font-size: 15px; margin-bottom: 2px; }
+      .wifi-card .wifi-sub { font-size: 10.5px; margin-bottom: 7px; }
+      .wifi-card label { font-size: 10.5px; margin-bottom: 3px; }
       .wifi-card input,
-      .wifi-card select { padding: 7px 10px; font-size: 13px; margin-bottom: 7px; }
-      .wifi-card button { padding: 9px; font-size: 13.5px; }
-      .app-footer { padding: 6px 12px; font-size: 9.5px; }
-      .shrek-title { font-size: 17px; margin-bottom: 6px; }
-      .shrek-img { max-height: calc(100vh - 220px); max-height: calc(100dvh - 220px); }
+      .wifi-card select { padding: 6px 9px; font-size: 12.5px; margin-bottom: 6px; }
+      .wifi-card button { padding: 8px; font-size: 12.5px; }
+      .app-footer { padding: 5px 11px; font-size: 9px; }
+      .shrek-title { font-size: 15px; margin-bottom: 5px; }
+      .shrek-img { max-height: calc(100vh - 210px); max-height: calc(100dvh - 210px); }
     }
   </style>
 </head>
